@@ -1,0 +1,18 @@
+[package]
+name = "mls-srtp-demo"
+version = "0.1.0"
+edition = "2021"
+description = "Demo: Export MLS keys to protect SRTP media (RFC 9420 + RFC 7714)"
+
+[dependencies]
+# OpenMLS crates (local paths)
+openmls = { path = "openmls/openmls", features = ["test-utils"] }
+openmls_rust_crypto = { path = "openmls/openmls_rust_crypto", features = ["test-utils"] }
+openmls_basic_credential = { path = "openmls/basic_credential", features = ["clonable"] }
+openmls_traits = { path = "openmls/traits" }
+
+# SRTP (Rust bindings for libsrtp — uses OpenSSL for AES-GCM)
+srtp = "0.7"
+
+# Utilities
+hex = "0.4"
