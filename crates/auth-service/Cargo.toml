@@ -1,0 +1,11 @@
+[package]
+name = "auth-service"
+version = "0.1.0"
+edition = "2021"
+description = "Authentication Service: credential registry for MLS-SRTP demo"
+
+[dependencies]
+actix-web = { workspace = true }
+actix-rt = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
