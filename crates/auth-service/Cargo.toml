@@ -1,8 +1,8 @@
 [package]
 name = "auth-service"
 version = "0.1.0"
-edition = "2021"
-description = "Authentication Service: credential registry for MLS-SRTP demo"
+edition = "2024"
+description = "Authentication Service: credential registry for MLS-SRTP"
 
 [dependencies]
 actix-web = { workspace = true }

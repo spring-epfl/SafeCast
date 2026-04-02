@@ -13,6 +13,8 @@
 //!       ExpandWithLabel(DeriveSecret(exporter_secret, Label),
 //!                       "exported", Hash(Context), Length)
 
+use std::hash::{Hash, Hasher};
+
 use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
@@ -38,6 +40,16 @@ pub const AES_128_GCM_SALT_LEN: usize = 12;
 /// Combined key material length for libsrtp: master_key || master_salt = 28 bytes.
 pub const SRTP_KEY_MATERIAL_LEN: usize = AES_128_GCM_KEY_LEN + AES_128_GCM_SALT_LEN;
 
+/// Derives a deterministic SSRC from a sender name by hashing it.
+///
+/// This allows receivers to compute the expected SSRC for any sender
+/// without out-of-band signaling.
+pub fn ssrc_from_name(name: &str) -> u32 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    name.hash(&mut hasher);
+    hasher.finish() as u32
+}
+
 /// An MLS group member with its own cryptographic provider, signing key, and credential.
 ///
 /// Each member gets an independent `OpenMlsRustCrypto` provider (which includes
@@ -52,9 +64,14 @@ pub struct MlsMember {
 impl MlsMember {
     /// Creates a new MLS member with a fresh signing key and a basic credential
     /// (RFC 9420 §5.3: "a bare assertion of an identity, without any additional information").
-    pub fn new(name: &str) -> Self {
+    ///
+    /// The credential identity encodes both name and role as name:role,
+    /// allowing other group members to determine each peer's SRTP role
+    /// (sender or receiver) from the MLS group tree.
+    pub fn new(name: &str, role: &str) -> Self {
         let provider = OpenMlsRustCrypto::default();
-        let credential = BasicCredential::new(name.into());
+        let identity = format!("{name}:{role}");
+        let credential = BasicCredential::new(identity.into());
         let signer = SignatureKeyPair::new(CIPHERSUITE.signature_algorithm())
             .expect("failed to generate signature key pair");
         // storing the signing key in this member's key store so OpenMLS can find it
@@ -85,6 +102,14 @@ impl MlsMember {
             )
             .expect("failed to build key package")
     }
+}
+
+/// Parses a credential identity string of the form name:role into its
+/// components. Returns (name, role).
+pub fn parse_credential_identity(identity: &str) -> (&str, &str) {
+    identity
+        .rsplit_once(':')
+        .expect("credential identity must be in 'name:role' format")
 }
 
 /// Builds the context byte string passed to the MLS exporter.

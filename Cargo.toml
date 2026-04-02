@@ -2,8 +2,7 @@
 members = [
     "crates/mls-srtp-common",
     "crates/auth-service",
-    "crates/client-alice",
-    "crates/client-bob",
+    "crates/mls-srtp-client",
 ]
 exclude = ["openmls"]
 resolver = "2"
@@ -38,4 +37,5 @@ serde_json = "1.0"
 # Utilities
 hex = "0.4"
 base64 = "0.22"
-socket2 = "0.5"
+socket2 = { version = "0.5", features = ["all"] }
+clap = { version = "4", features = ["derive"] }

@@ -57,6 +57,10 @@ pub fn create_multicast_receiver() -> std::io::Result<UdpSocket> {
 
     // allowing multiple receivers to bind to the same port on one host
     socket.set_reuse_address(true)?;
+    // on Unix, SO_REUSEPORT is also required for multiple processes to
+    // bind to the same port simultaneously
+    #[cfg(unix)]
+    socket.set_reuse_port(true)?;
 
     // required before handing off to Tokio's async reactor
     socket.set_nonblocking(true)?;

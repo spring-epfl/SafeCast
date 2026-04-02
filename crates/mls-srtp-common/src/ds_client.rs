@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use ds_lib::messages::{AuthToken, RecvMessageRequest, RegisterClientRequest};
 use ds_lib::{ClientKeyPackages, GroupMessage};
 use openmls::prelude::tls_codec::{
-    Deserialize as TlsDeserialize, Serialize as TlsSerialize, TlsByteVecU8, TlsVecU16,
+    Deserialize as TlsDeserialize, Serialize as TlsSerialize, TlsByteVecU8, TlsVecU16, TlsVecU32,
 };
 use openmls::prelude::*;
 
@@ -197,6 +197,37 @@ impl DsClient {
         self.auth_token = Some(success.auth_token);
         self.client_id = Some(identity.to_vec());
         Ok(())
+    }
+
+    /// Lists all client identities currently registered on the DS.
+    ///
+    /// Uses `GET /clients/list` which returns a TLS-serialized
+    /// `TlsVecU32<Vec<u8>>` of client identity byte vectors.
+    pub async fn list_clients(&self) -> Result<Vec<Vec<u8>>, String> {
+        let resp = self
+            .http
+            .get(format!("{}/clients/list", self.ds_url))
+            .send()
+            .await
+            .map_err(|e| format!("DS list clients failed: {e}"))?;
+
+        if !resp.status().is_success() {
+            return Err(format!("DS list clients failed: HTTP {}", resp.status()));
+        }
+
+        let resp_bytes = resp
+            .bytes()
+            .await
+            .map_err(|e| format!("DS list clients read failed: {e}"))?;
+
+        if resp_bytes.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let clients: TlsVecU32<Vec<u8>> = TlsVecU32::tls_deserialize_exact(&resp_bytes)
+            .map_err(|e| format!("DS list clients parse failed: {e}"))?;
+
+        Ok(clients.into())
     }
 
     /// Consumes (pops) one KeyPackage for the given client identity.
