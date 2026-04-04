@@ -12,6 +12,10 @@
 //!
 //! This is sufficient for feeding RTP packets into libsrtp's protect/unprotect.
 
+/// Fixed RTP header size in bytes: version/flags (1) + payload type (1)
+/// + sequence number (2) + timestamp (4) + SSRC (4) = 12 bytes (RFC 3550 §5.1).
+pub const RTP_HEADER_LEN: usize = 12;
+
 /// A minimal RTP packet: fixed 12-byte header + payload.
 pub struct RtpPacket {
     pub payload_type: u8,
@@ -27,7 +31,7 @@ impl RtpPacket {
     /// libsrtp's `protect` API operates on raw RTP
     /// bytes, not on a Rust struct
     pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = Vec::with_capacity(12 + self.payload.len());
+        let mut buf = Vec::with_capacity(RTP_HEADER_LEN + self.payload.len());
         buf.push(0x80); 
         buf.push(self.payload_type & 0x7F);
         buf.extend_from_slice(&self.sequence_number.to_be_bytes());
@@ -42,7 +46,7 @@ impl RtpPacket {
     /// After libsrtp `unprotect` returns decrypted bytes,
     /// we need to reconstruct `RtpPacket`.
     pub fn from_bytes(data: &[u8]) -> Option<Self> {
-        if data.len() < 12 {
+        if data.len() < RTP_HEADER_LEN {
             return None;
         }
         Some(Self {
@@ -50,7 +54,7 @@ impl RtpPacket {
             sequence_number: u16::from_be_bytes([data[2], data[3]]),
             timestamp: u32::from_be_bytes([data[4], data[5], data[6], data[7]]),
             ssrc: u32::from_be_bytes([data[8], data[9], data[10], data[11]]),
-            payload: data[12..].to_vec(),
+            payload: data[RTP_HEADER_LEN..].to_vec(),
         })
     }
 }
