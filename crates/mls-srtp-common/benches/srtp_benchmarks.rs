@@ -254,7 +254,7 @@ fn bench_srtp_decrypt(c: &mut Criterion) {
             // of re-encrypting 50,000 packets. This affects <0.002% of
             // iterations (1 in 50,000) and criterion's outlier detection
             // filters these
-            // TODO: maybe fix this
+            // TODO: maybe fix this (using iter_batched?)
             b.iter(|| {
 
                 // recreating the batch if we have exhausted all pre-encrypted
@@ -322,3 +322,45 @@ criterion_group!(
 
 // the main() entry point
 criterion_main!(benches);
+
+
+
+// ---------------------------------------------------------------------------
+// TODO: Experiments
+// ---------------------------------------------------------------------------
+//
+// 1. SRTP cipher comparison. Benchmarking protect/unprotect across the three
+//    SRTP cipher families to quantify the cost of authenticated encryption
+//    vs. authentication-only vs. encrypt-then-MAC:
+//
+//    - AEAD_AES_128_GCM (RFC 7714): authenticated encryption,
+//      used in our current setup.
+//
+//    - AES_CM_128_HMAC_SHA1_80 (RFC 3711 §5): the mandatory-to-implement
+//      SRTP profile. Encrypt-then-MAC: AES-128 in counter mode for
+//      confidentiality (RFC 3711 §5.1), then HMAC-SHA1 truncated to 80 bits
+//      for authentication (RFC 3711 §5.2). Two separate passes over the data.
+//
+//    - NULL_HMAC_SHA1_80 (RFC 3711 §5): same as above but without encryption (RFC 3711 §5.1). 
+//
+// 2. MLS join cost: time for a new member to join a group (i.e., welcome processing time), 
+//    varying group size (2, 10, 50, 200, 500, 1000, 5000 members).
+//
+// 3. MLS rekey cost: time to perform a group rekey (i.e., commit processing time) 
+//    for different group sizes.
+//
+// 4. Memory usage (both MLS and SRTP) for different group size.
+//
+// 5. Sender-side inbound SRTCP state memory: the `srtp` crate supports SRTCP via
+//    `session.protect_rtcp()` & `session.unprotect_rtcp()`. RTCP packets
+//    are typically small (tens of bytes) and
+//    sent infrequently (~every 5 seconds per RFC 3550 §6.2), so the
+//    per-packet cost is unlikely to be a bottleneck. However, in large
+//    multicast groups, the sender must maintain cryptographic state for
+//    each receiver's RTCP stream, which could affect memory. RFC 3711:
+//    "In large multicast with one sender, the same considerations as for
+//    the small group multicast hold.  The biggest issue in this scenario
+//    is the additional load placed at the sender side, due to the state
+//    (cryptographic contexts) that has to be maintained for each receiver,
+//    sending back RTCP Receiver Reports. At minimum, a replay window
+//    might need to be maintained for each RTCP source."
