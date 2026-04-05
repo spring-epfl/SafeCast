@@ -1,8 +1,8 @@
 [package]
-name = "mls-srtp-common"
+name = "mls-srtp-core"
 version = "0.1.0"
 edition = "2024"
-description = "Shared library for MLS-SRTP: MLS group helpers, RTP packets, SRTP sessions, DS client, multicast"
+description = "Core library for MLS-SRTP: MLS group helpers, RTP packets, SRTP sessions, DS client, multicast"
 
 [dependencies]
 openmls = { workspace = true }

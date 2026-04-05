@@ -2251,7 +2251,7 @@ version = "0.1.0"
 dependencies = [
  "clap 4.6.0",
  "hex",
- "mls-srtp-common",
+ "mls-srtp-core",
  "openmls",
  "openmls_traits",
  "reqwest",
@@ -2260,7 +2260,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mls-srtp-common"
+name = "mls-srtp-core"
 version = "0.1.0"
 dependencies = [
  "base64",

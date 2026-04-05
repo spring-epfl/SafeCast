@@ -15,13 +15,13 @@ use std::collections::HashMap;
 
 use clap::{Parser, ValueEnum};
 
-use mls_srtp_common::ds_client::DsClient;
-use mls_srtp_common::mls::{
+use mls_srtp_core::ds_client::DsClient;
+use mls_srtp_core::mls::{
     export_srtp_keys, parse_credential_identity, ssrc_from_name, MlsMember, CIPHERSUITE,
 };
-use mls_srtp_common::multicast;
-use mls_srtp_common::rtp::RtpPacket;
-use mls_srtp_common::srtp_session::{create_receiver_session, create_sender_session};
+use mls_srtp_core::multicast;
+use mls_srtp_core::rtp::RtpPacket;
+use mls_srtp_core::srtp_session::{create_receiver_session, create_sender_session};
 
 use openmls::prelude::tls_codec::{Deserialize as TlsDeserialize, Serialize as TlsSerialize};
 use openmls::prelude::*;

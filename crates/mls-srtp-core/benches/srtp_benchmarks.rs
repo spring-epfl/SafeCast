@@ -1,6 +1,6 @@
 //! Criterion benchmarks for MLS-SRTP encryption, decryption, and key export.
 //!
-//! Run: cargo bench --package mls-srtp-common --bench srtp_benchmarks
+//! Run: cargo bench --package mls-srtp-core --bench srtp_benchmarks
 //! Output: HTML reports are written to `target/criterion/`
 //!
 //! Benchmarks:
@@ -23,9 +23,9 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
 
-use mls_srtp_common::mls::{export_srtp_keys, ssrc_from_name, MlsMember, CIPHERSUITE};
-use mls_srtp_common::rtp::{RtpPacket, RTP_HEADER_LEN};
-use mls_srtp_common::srtp_session::{create_receiver_session, create_sender_session};
+use mls_srtp_core::mls::{export_srtp_keys, ssrc_from_name, MlsMember, CIPHERSUITE};
+use mls_srtp_core::rtp::{RtpPacket, RTP_HEADER_LEN};
+use mls_srtp_core::srtp_session::{create_receiver_session, create_sender_session};
 
 /// AES-128-GCM authentication tag length in bytes
 const GCM_TAG_LEN: usize = 16;

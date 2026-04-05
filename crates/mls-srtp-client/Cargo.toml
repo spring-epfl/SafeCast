@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-mls-srtp-common = { path = "../mls-srtp-common" }
+mls-srtp-core = { path = "../mls-srtp-core" }
 openmls = { workspace = true }
 openmls_traits = { workspace = true }
 srtp = { workspace = true }

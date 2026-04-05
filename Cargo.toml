@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/mls-srtp-common",
+    "crates/mls-srtp-core",
     "crates/auth-service",
     "crates/mls-srtp-client",
 ]
