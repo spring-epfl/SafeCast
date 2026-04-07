@@ -1,15 +1,20 @@
 //! MLS-SRTP client with configurable participants.
 //!
-//! A binary that can act as either a group creator (sender) or
-//! joiner (receiver). Names are auto-generated and peers are discovered
-//! dynamically via the Delivery Service.
+//! A binary that can act as a group creator, sender, or receiver. The creator
+//! sets up the MLS group and delivers Welcome messages but does not participate
+//! in SRTP traffic. Senders and receivers join the group via Welcome.
+//! Identities are auto-generated and peers are discovered dynamically via the
+//! Delivery Service.
 //!
 //! Usage examples:
-//!   # Sender (creates group, waits for 3 receivers to register):
-//!   mls-srtp-client --mode sender --receivers 3
+//!   # Creator (sets up the group, waits for 1 sender and 3 receivers):
+//!   mls-srtp-client --mode creator --senders 1 --receivers 3
 //!
-//!   # Receiver (registers and waits for Welcome):
-//!   mls-srtp-client --mode receiver
+//!   # Sender (registers, joins via Welcome, sends SRTP):
+//!   mls-srtp-client --mode sender --packets 3
+//!
+//!   # Receiver (registers, joins via Welcome, receives SRTP):
+//!   mls-srtp-client --mode receiver --packets 3
 
 use std::collections::HashMap;
 
@@ -17,7 +22,7 @@ use clap::{Parser, ValueEnum};
 
 use mls_srtp_core::ds_client::DsClient;
 use mls_srtp_core::mls::{
-    export_srtp_keys, parse_credential_identity, ssrc_from_name, MlsMember, CIPHERSUITE,
+    export_srtp_keys, parse_credential_identity, ssrc_from_identity, MlsMember, CIPHERSUITE,
 };
 use mls_srtp_core::multicast;
 use mls_srtp_core::rtp::RtpPacket;
@@ -36,28 +41,33 @@ fn green(msg: impl AsRef<str>) -> String {
     format!("{GREEN}{}{RESET}", msg.as_ref())
 }
 
-/// The SRTP role this client plays on the network.
+/// The role this client plays in the MLS-SRTP session.
 #[derive(Clone, ValueEnum)]
 enum Mode {
-    /// Send SRTP packets over multicast (creator role).
+    /// Create the MLS group and add all peers (no SRTP traffic).
+    Creator,
+    /// Join the group via Welcome, then send SRTP packets over multicast.
     Sender,
-    /// Receive SRTP packets from multicast (joiner role).
+    /// Join the group via Welcome, then receive SRTP packets from multicast.
     Receiver,
 }
 
 #[derive(Parser)]
-#[command(about = "MLS-SRTP client — sender creates the group, receivers join it")]
+#[command(about = "MLS-SRTP client, senders/receivers join it")]
 struct Cli {
-    /// Run as sender (group creator) or receiver (joiner).
+    /// Run as creator (group setup only), sender, or receiver.
     #[arg(long)]
     mode: Mode,
 
-    /// Number of receivers to wait for before creating the group (sender only).
-    /// The sender polls the DS client list until this many peers have registered.
+    /// Number of senders to wait for before creating the group (creator only).
+    #[arg(long, default_value = "1")]
+    senders: u32,
+
+    /// Number of receivers to wait for before creating the group (creator only).
     #[arg(long, default_value = "1")]
     receivers: u32,
 
-    /// Number of SRTP packets to send.
+    /// Number of SRTP packets to send (sender only).
     #[arg(long, default_value = "3")]
     packets: u32,
 
@@ -70,13 +80,14 @@ struct Cli {
     ds_url: String,
 }
 
-/// Generates a unique client name based on mode and process ID.
-/// Senders are always called "sender"; receivers get a unique name
-/// using their OS process ID (e.g. "receiver-48231").
-fn generate_name(mode: &Mode) -> String {
+/// Generates a unique credential identity based on mode and process ID.
+/// Format is "label:role" (e.g. "sender-48231:sender" or "receiver-12045:receiver").
+fn generate_identity(mode: &Mode) -> String {
+    let pid = std::process::id();
     match mode {
-        Mode::Sender => "sender".to_string(),
-        Mode::Receiver => format!("receiver-{}", std::process::id()),
+        Mode::Creator => format!("creator-{pid}:creator"),
+        Mode::Sender => format!("sender-{pid}:sender"),
+        Mode::Receiver => format!("receiver-{pid}:receiver"),
     }
 }
 
@@ -85,15 +96,25 @@ async fn main() {
     let cli = Cli::parse();
 
     // auto-generating a unique identity for this client based on its role.
-    let name = generate_name(&cli.mode);
+    let identity = generate_identity(&cli.mode);
+    let (label, _) = parse_credential_identity(&identity);
+    let is_creator = matches!(cli.mode, Mode::Creator);
     let is_sender = matches!(cli.mode, Mode::Sender);
-    let role_label = if is_sender { "Creator/Sender" } else { "Joiner/Receiver" };
+    let role_label = match cli.mode {
+        Mode::Creator => "Creator",
+        Mode::Sender => "Sender",
+        Mode::Receiver => "Receiver",
+    };
 
-    // building a colored log prefix like "[sender]" or "[receiver-48231]"
-    let tag_color = if is_sender { CYAN } else { MAGENTA };
-    let tag = format!("{tag_color}[{name}]{RESET}");
+    // building a colored log prefix like "[sender-48231]" or "[receiver-12045]"
+    let tag_color = match cli.mode {
+        Mode::Creator => CYAN,
+        Mode::Sender => CYAN,
+        Mode::Receiver => MAGENTA,
+    };
+    let tag = format!("{tag_color}[{label}]{RESET}");
 
-    println!("{tag} === {name} (MLS {role_label}) ===");
+    println!("{tag} === {label} (MLS {role_label}) ===");
 
     // initializing libsrtp (must be called once before any SRTP operations)
     srtp::ensure_init();
@@ -101,9 +122,7 @@ async fn main() {
     // setting up the DS client (used to talk to the AS and DS over HTTP)
     // and the MLS member (holds the crypto provider, signing key, and credential)
     let mut ds_client = DsClient::new(&cli.as_url, &cli.ds_url);
-    let role = if is_sender { "sender" } else { "receiver" };
-    let identity = format!("{name}:{role}");
-    let member = MlsMember::new(&name, role);
+    let member = MlsMember::new(&identity);
 
     // -----------------------------------------------------------------------
     // Step 1: Registration (AS + DS)
@@ -114,7 +133,7 @@ async fn main() {
     // can later add it to the MLS group.
     //
     // The AS identity must match the credential identity embedded in our
-    // KeyPackages ("name:role"), so that peers can look us up by parsing
+    // KeyPackages ("label:role"), so that peers can look us up by parsing
     // the credential from the MLS group tree.
     // -----------------------------------------------------------------------
     println!();
@@ -165,14 +184,14 @@ async fn main() {
     // -----------------------------------------------------------------------
     // Step 2: Group setup (role-dependent)
     //
-    // The sender (creator) discovers peers via the DS, fetches and verifies
-    // their KeyPackages, creates the MLS group, adds everyone, and delivers
+    // The creator discovers peers via the DS, fetches and verifies their
+    // KeyPackages, creates the MLS group, adds everyone, and delivers
     // the Welcome message through the DS.
     //
-    // Receivers (joiners) simply poll the DS until they receive a Welcome
+    // Senders and receivers poll the DS until they receive a Welcome
     // message, then use it to join the group.
     // -----------------------------------------------------------------------
-    let group = if is_sender {
+    let group = if is_creator {
         create_group(&cli, &identity, &tag, &mut ds_client, &member).await
     } else {
         join_group(&tag, &mut ds_client, &member).await
@@ -190,100 +209,106 @@ async fn main() {
     println!("{tag} --- Credential Verification ---");
     verify_group_members(&tag, &ds_client, &group, &identity).await;
 
+    // the creator's job is done after group setup and verification: it does
+    // not participate in SRTP traffic
+    if is_creator {
+        println!();
+        println!("{tag} === {label} Done (group created) ===");
+        return;
+    }
+
     // -----------------------------------------------------------------------
     // Step 4: SRTP key export
     //
     // MLS provides an `export_secret` API that derives key material bound
     // to a (label, context) pair and the current group epoch. We use this
     // to derive per-sender SRTP master key + salt. Each sender is identified
-    // by its name and a deterministic SSRC derived from that name.
-    // TODO: SSRC is probably enough
+    // by a deterministic SSRC derived from its credential identity.
     //
     // Senders export their own key material; receivers export key material
-    // only for group members with the "sender" role, since only senders
+    // for every group member with the "sender" role, since only senders
     // transmit SRTP packets.
     // -----------------------------------------------------------------------
     println!();
     println!("{tag} --- SRTP Key Export ---");
 
     // collecting all member identities from the MLS group tree,
-    // parsing each credential to extract (name, role)
+    // parsing each credential to extract (label, role)
     let all_members: Vec<(String, String)> = group
         .members()
         .map(|m| {
-            let identity =
-                String::from_utf8_lossy(m.credential.serialized_content()).to_string();
-            let (n, r) = parse_credential_identity(&identity);
-            (n.to_string(), r.to_string())
+            let id = String::from_utf8_lossy(m.credential.serialized_content()).to_string();
+            let (_label, role) = parse_credential_identity(&id);
+            let role = role.to_string();
+            (id, role)
         })
         .collect();
 
     // only members with the "sender" role will transmit SRTP packets
-    let senders: Vec<&String> = all_members
+    let sender_identities: Vec<&String> = all_members
         .iter()
         .filter(|(_, r)| r == "sender")
-        .map(|(n, _)| n)
+        .map(|(id, _)| id)
         .collect();
 
-    // deriving our SSRC (Synchronization Source identifier) from our name
-    let my_ssrc = ssrc_from_name(&name);
+    // deriving our SSRC (Synchronization Source identifier) from our identity
+    let my_ssrc = ssrc_from_identity(&identity);
 
-    // If we are a receiver, we export SRTP key material for each sender in
-    // the group and create one SRTP receiver session per sender, keyed by SSRC.
-    let mut receiver_sessions: HashMap<u32, srtp::Session> = HashMap::new();
-    if !is_sender {
-        for sender_name in &senders {
-            let sender_ssrc = ssrc_from_name(sender_name);
+    if is_sender {
+        // sender exports its own key material
+        let (key_material, _, _) =
+            export_srtp_keys(&group, member.provider.crypto(), my_ssrc);
+        println!(
+            "{tag} Sender keys exported (SSRC=0x{my_ssrc:08X})."
+        );
+
+        // -----------------------------------------------------------------
+        // Step 5: Multicast send
+        // -----------------------------------------------------------------
+        println!();
+        println!("{tag} --- SRTP Multicast ---");
+        send_srtp(&tag, label, my_ssrc, &key_material, cli.packets).await;
+    } else {
+        // receiver exports SRTP key material for each sender in the group
+        // and creates one SRTP receiver session per sender, keyed by SSRC
+        let mut receiver_sessions: HashMap<u32, srtp::Session> = HashMap::new();
+        for sender_id in &sender_identities {
+            let sender_ssrc = ssrc_from_identity(sender_id);
             let (key_material, _, _) = export_srtp_keys(
                 &group,
                 member.provider.crypto(),
-                sender_name.as_bytes(),
                 sender_ssrc,
             );
+            let (sender_label, _) = parse_credential_identity(sender_id);
             println!(
-                "{tag} Receiver keys for {sender_name} (SSRC=0x{sender_ssrc:08X}) exported."
+                "{tag} Receiver keys for {sender_label} (SSRC=0x{sender_ssrc:08X}) exported."
             );
             // creating a libsrtp session configured for decryption with this
             // sender's key material
             let session = create_receiver_session(&key_material);
             receiver_sessions.insert(sender_ssrc, session);
         }
-    }
 
-    // -----------------------------------------------------------------------
-    // Step 5: Multicast send/receive
-    //
-    // The sender constructs RTP packets, encrypts them with SRTP, and sends
-    // them to the multicast group address. Receivers listen on the multicast
-    // group, look up the SRTP session by SSRC, decrypt, and display the
-    // payload.
-    // -----------------------------------------------------------------------
-    println!();
-    println!("{tag} --- SRTP Multicast ---");
-
-    if is_sender {
-        // exporting our key material to create a sender SRTP session
-        let (key_material, _, _) =
-            export_srtp_keys(&group, member.provider.crypto(), name.as_bytes(), my_ssrc);
-        send_srtp(&tag, &name, my_ssrc, &key_material, cli.packets).await;
-    } else {
-        // calculating how many total packets we expect: one set of `cli.packets`
-        // from each sender in the group
-        let expected_packets = senders.len() as u32 * cli.packets;
+        // -----------------------------------------------------------------
+        // Step 5: Multicast receive
+        // -----------------------------------------------------------------
+        println!();
+        println!("{tag} --- SRTP Multicast ---");
+        let expected_packets = sender_identities.len() as u32 * cli.packets;
         recv_srtp(&tag, receiver_sessions, expected_packets).await;
     }
 
     println!();
-    println!("{tag} === {name} Done ===");
+    println!("{tag} === {label} Done ===");
 }
 
 // ---------------------------------------------------------------------------
-// Group creation (sender/creator role)
+// Group creation (creator role)
 //
 // The creator performs dynamic peer discovery by polling the DS for the list
-// of registered clients. Once all expected receivers have registered, it
-// fetches and verifies their KeyPackages, creates the MLS group with all
-// members, and delivers the Welcome message through the DS.
+// of registered clients. Once all expected senders and receivers have
+// registered, it fetches and verifies their KeyPackages, creates the MLS
+// group with all members, and delivers the Welcome message through the DS.
 // ---------------------------------------------------------------------------
 
 async fn create_group(
@@ -294,12 +319,14 @@ async fn create_group(
     member: &MlsMember,
 ) -> MlsGroup {
 
-    // Polling GET /clients/list on the DS until we see at least `cli.receivers`
-    // other clients (excluding ourselves).
+    let expected_peers = cli.senders + cli.receivers;
+
+    // polling GET /clients/list on the DS until we see all expected peers
+    // (excluding ourselves)
     println!();
     println!(
-        "{tag} --- Discovering Peers (waiting for {} receiver(s)) ---",
-        cli.receivers
+        "{tag} --- Discovering Peers (waiting for {} sender(s) + {} receiver(s)) ---",
+        cli.senders, cli.receivers
     );
 
     let peer_identities: Vec<String> = loop {
@@ -312,7 +339,7 @@ async fn create_group(
             .filter(|n| n != identity)
             .collect();
 
-        if peers.len() >= cli.receivers as usize {
+        if peers.len() >= expected_peers as usize {
             println!("{tag} Discovered {} peer(s): {}", peers.len(), peers.join(", "));
             break peers;
         }
@@ -320,7 +347,7 @@ async fn create_group(
         println!(
             "{tag} Found {}/{} peers, waiting...",
             peers.len(),
-            cli.receivers
+            expected_peers
         );
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     };
@@ -336,8 +363,8 @@ async fn create_group(
 
     let mut peer_kps: Vec<KeyPackage> = Vec::new();
     for peer_id in &peer_identities {
-        let (peer_name, _) = parse_credential_identity(peer_id);
-        println!("{tag} Fetching {peer_name}'s KeyPackage...");
+        let (peer_label, _) = parse_credential_identity(peer_id);
+        println!("{tag} Fetching {peer_label}'s KeyPackage...");
 
         // polling until the peer's KeyPackage is available on the DS (it may
         // not be ready yet if registration is still in progress)
@@ -374,12 +401,12 @@ async fn create_group(
         // ensuring the key in the KeyPackage matches what the AS has on record
         assert_eq!(
             pk_from_as, pk_from_kp,
-            "{peer_name}'s public key from AS does not match KeyPackage!"
+            "{peer_label}'s public key from AS does not match KeyPackage!"
         );
         println!(
             "{tag} {}",
             green(format!(
-                "{peer_name}'s credential verified: AS key matches KeyPackage."
+                "{peer_label}'s credential verified: AS key matches KeyPackage."
             ))
         );
 
@@ -458,11 +485,12 @@ async fn create_group(
 }
 
 // ---------------------------------------------------------------------------
-// Group joining (receiver/joiner role)
+// Group joining (sender/receiver role)
 //
-// Receivers poll the DS for incoming messages until they receive a Welcome.
-// The Welcome contains everything needed to reconstruct the MLS group state:
-// encrypted group secrets, the ratchet tree, and the group configuration.
+// Senders and receivers poll the DS for incoming messages until they receive
+// a Welcome. The Welcome contains everything needed to reconstruct the MLS
+// group state: encrypted group secrets, the ratchet tree, and the group
+// configuration.
 // ---------------------------------------------------------------------------
 
 async fn join_group(
@@ -546,15 +574,15 @@ async fn verify_group_members(
     my_identity: &str,
 ) {
     for m in group.members() {
-        // The credential encodes "name:role"; we use the full identity for
-        // AS lookup (since the AS stores keys under the same "name:role" string).
+        // The credential encodes "label:role"; we use the full identity for
+        // AS lookup (since the AS stores keys under the same "label:role" string).
         let identity = String::from_utf8_lossy(m.credential.serialized_content()).to_string();
 
         if identity == my_identity {
             continue;
         }
 
-        let (peer_name, _role) = parse_credential_identity(&identity);
+        let (peer_label, _role) = parse_credential_identity(&identity);
 
         // fetching the peer's registered public key from the AS
         let pk_from_as = ds_client
@@ -566,12 +594,12 @@ async fn verify_group_members(
         assert_eq!(
             pk_from_as,
             m.signature_key.as_slice(),
-            "{peer_name}'s AS key does not match group tree!"
+            "{peer_label}'s AS key does not match group tree!"
         );
         println!(
             "{tag} {}",
             green(format!(
-                "{peer_name}'s credential verified: AS key matches group tree."
+                "{peer_label}'s credential verified: AS key matches group tree."
             ))
         );
     }
@@ -586,7 +614,7 @@ async fn verify_group_members(
 // real-time audio stream.
 // ---------------------------------------------------------------------------
 
-async fn send_srtp(tag: &str, name: &str, ssrc: u32, key_material: &[u8], num_packets: u32) {
+async fn send_srtp(tag: &str, label: &str, ssrc: u32, key_material: &[u8], num_packets: u32) {
     // creating a libsrtp sender session configured with AES-128-CM + HMAC-SHA1-80,
     // keyed with the MLS-exported master key and salt.
     let mut srtp_session = create_sender_session(key_material);
@@ -610,7 +638,7 @@ async fn send_srtp(tag: &str, name: &str, ssrc: u32, key_material: &[u8], num_pa
             sequence_number: i as u16,
             timestamp: i * 960, // 960 samples per frame at 48kHz = 20ms
             ssrc,
-            payload: format!("Hello from {name} - audio frame {i}").into_bytes(),
+            payload: format!("Hello from {label} - audio frame {i}").into_bytes(),
         };
 
         // Serializing to raw RTP bytes, then encrypting in-place with SRTP.

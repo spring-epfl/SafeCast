@@ -29,7 +29,7 @@ const TAG: &str = "\x1b[33m[AS]\x1b[0m";
 /// actix-web worker threads.
 #[derive(Default)]
 struct AsData {
-    /// Maps identity (e.g. "Alice") to base64-encoded Ed25519 public signing key.
+    /// Maps identity (e.g. "sender-48231:sender") to base64-encoded Ed25519 public signing key.
     /// Wrapped in a `Mutex` because actix-web handlers run concurrently.
     credentials: Mutex<HashMap<String, String>>,
 }

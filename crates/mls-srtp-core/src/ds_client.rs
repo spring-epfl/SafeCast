@@ -55,7 +55,7 @@ pub struct DsClient {
     /// Auth token returned by the DS upon registration; required for
     /// subsequent DS requests (message retrieval).
     auth_token: Option<AuthToken>,
-    /// Client identity bytes (the MLS basic credential content, e.g. b"Alice").
+    /// Client identity bytes (the MLS basic credential content, e.g. b"sender-48231:sender").
     client_id: Option<Vec<u8>>,
 }
 

@@ -40,13 +40,13 @@ pub const AES_128_GCM_SALT_LEN: usize = 12;
 /// Combined key material length for libsrtp: master_key || master_salt = 28 bytes.
 pub const SRTP_KEY_MATERIAL_LEN: usize = AES_128_GCM_KEY_LEN + AES_128_GCM_SALT_LEN;
 
-/// Derives a deterministic SSRC from a sender name by hashing it.
+/// Derives a deterministic SSRC from a credential identity by hashing it.
 ///
 /// This allows receivers to compute the expected SSRC for any sender
 /// without out-of-band signaling.
-pub fn ssrc_from_name(name: &str) -> u32 {
+pub fn ssrc_from_identity(identity: &str) -> u32 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    name.hash(&mut hasher);
+    identity.hash(&mut hasher);
     hasher.finish() as u32
 }
 
@@ -65,13 +65,12 @@ impl MlsMember {
     /// Creates a new MLS member with a fresh signing key and a basic credential
     /// (RFC 9420 §5.3: "a bare assertion of an identity, without any additional information").
     ///
-    /// The credential identity encodes both name and role as name:role,
+    /// The credential identity should encode the member's role (e.g. "sender-48231:sender"),
     /// allowing other group members to determine each peer's SRTP role
     /// (sender or receiver) from the MLS group tree.
-    pub fn new(name: &str, role: &str) -> Self {
+    pub fn new(identity: &str) -> Self {
         let provider = OpenMlsRustCrypto::default();
-        let identity = format!("{name}:{role}");
-        let credential = BasicCredential::new(identity.into());
+        let credential = BasicCredential::new(identity.as_bytes().to_vec());
         let signer = SignatureKeyPair::new(CIPHERSUITE.signature_algorithm())
             .expect("failed to generate signature key pair");
         // storing the signing key in this member's key store so OpenMLS can find it
@@ -104,12 +103,12 @@ impl MlsMember {
     }
 }
 
-/// Parses a credential identity string of the form name:role into its
-/// components. Returns (name, role).
+/// Parses a credential identity string of the form label:role into its
+/// components. Returns (label, role).
 pub fn parse_credential_identity(identity: &str) -> (&str, &str) {
     identity
         .rsplit_once(':')
-        .expect("credential identity must be in 'name:role' format")
+        .expect("credential identity must be in 'label:role' format")
 }
 
 /// Builds the context byte string passed to the MLS exporter.
@@ -118,19 +117,13 @@ pub fn parse_credential_identity(identity: &str) -> (&str, &str) {
 /// and a **context** (an arbitrary byte string that gets hashed into the
 /// derivation so that different inputs produce different output keys).
 ///
-/// We pack the sender's identity and SSRC (identifies the specific RTP stream) 
-/// into this context so that each RTP stream within the same MLS group epoch derives 
-/// its own independent SRTP key and salt.
+/// We use the SSRC (which uniquely identifies the RTP stream) as context
+/// so that each sender within the same MLS group epoch derives its own
+/// independent SRTP key and salt.
 ///
-/// Wire format: `len(sender_id) [4 bytes] || sender_id || SSRC [4 bytes]`
-pub fn build_exporter_context(sender_id: &[u8], ssrc: u32) -> Vec<u8> {
-    let mut ctx = Vec::new();
-    // length-prefixed sender_id for unambiguous parsing
-    ctx.extend_from_slice(&(sender_id.len() as u32).to_be_bytes());
-    ctx.extend_from_slice(sender_id);
-    // SSRC 
-    ctx.extend_from_slice(&ssrc.to_be_bytes());
-    ctx
+/// Wire format: `SSRC [4 bytes]`
+pub fn build_exporter_context(ssrc: u32) -> Vec<u8> {
+    ssrc.to_be_bytes().to_vec()
 }
 
 /// Exports SRTP master key and master salt from an MLS group.
@@ -150,10 +143,9 @@ pub fn build_exporter_context(sender_id: &[u8], ssrc: u32) -> Vec<u8> {
 pub fn export_srtp_keys(
     group: &MlsGroup,
     crypto: &impl openmls_traits::crypto::OpenMlsCrypto,
-    sender_id: &[u8],
     ssrc: u32,
 ) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
-    let context = build_exporter_context(sender_id, ssrc);
+    let context = build_exporter_context(ssrc);
 
     // first exporter call: master key
     let master_key = group

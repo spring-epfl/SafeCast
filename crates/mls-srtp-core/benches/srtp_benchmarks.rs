@@ -23,7 +23,7 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
 };
 
-use mls_srtp_core::mls::{export_srtp_keys, ssrc_from_name, MlsMember, CIPHERSUITE};
+use mls_srtp_core::mls::{export_srtp_keys, ssrc_from_identity, MlsMember, CIPHERSUITE};
 use mls_srtp_core::rtp::{RtpPacket, RTP_HEADER_LEN};
 use mls_srtp_core::srtp_session::{create_receiver_session, create_sender_session};
 
@@ -64,8 +64,8 @@ const PAYLOAD_SIZES: &[(usize, &str)] = &[
 fn setup_mls_group() -> (MlsGroup, MlsMember, Vec<u8>) {
 
     // creating two MLS members: one sender and one receiver
-    let sender = MlsMember::new("sender", "sender");
-    let receiver = MlsMember::new("receiver", "receiver");
+    let sender = MlsMember::new("sender-0:sender");
+    let receiver = MlsMember::new("receiver-0:receiver");
 
     // generating a KeyPackage for the receiver so the sender can add it
     let receiver_kp = receiver.generate_key_package();
@@ -101,17 +101,17 @@ fn setup_mls_group() -> (MlsGroup, MlsMember, Vec<u8>) {
         .merge_pending_commit(&sender.provider)
         .expect("failed to merge commit");
 
-    // deriving a deterministic SSRC from the sender name and exporting
+    // deriving a deterministic SSRC from the sender identity and exporting
     // the SRTP key material via the MLS exporter
-    let ssrc = ssrc_from_name("sender");
+    let ssrc = ssrc_from_identity("sender-0:sender");
     let (key_material, _, _) =
-        export_srtp_keys(&group, sender.provider.crypto(), b"sender", ssrc);
+        export_srtp_keys(&group, sender.provider.crypto(), ssrc);
 
     (group, sender, key_material)
 }
 
 /// Creates a dummy RTP packet with a payload of the given size filled with
-/// 0xAB bytes. The payload content does not affect AES-GCM performance, 
+/// 0xAB bytes. The payload content does not affect AES-GCM performance,
 /// so synthetic data is equivalent to real audio/video frames.
 /// QUESTION: ^ ok?
 fn make_rtp_packet(payload_size: usize, seq: u16, ssrc: u32) -> RtpPacket {
@@ -140,7 +140,7 @@ fn bench_srtp_encrypt(c: &mut Criterion) {
     // setting up the MLS group and exporting key material (done once,
     // outside the timed loop)
     let (_group, _sender, key_material) = setup_mls_group();
-    let ssrc = ssrc_from_name("sender");
+    let ssrc = ssrc_from_identity("sender-0:sender");
 
     let mut group = c.benchmark_group("srtp_encrypt");
 
@@ -152,7 +152,7 @@ fn bench_srtp_encrypt(c: &mut Criterion) {
         group.throughput(Throughput::Bytes(rtp_len as u64));
 
         group.bench_with_input(BenchmarkId::new("protect", label), &size, |b, &sz| {
-            
+
             // Creating the SRTP session outside the timed loop (session
             // creation is a one-time setup cost, not a per-packet cost).
             // Sequence numbers must be unique within a session, so we
@@ -200,7 +200,7 @@ fn bench_srtp_decrypt(c: &mut Criterion) {
 
     // setting up the MLS group and exporting key material
     let (_group, _sender, key_material) = setup_mls_group();
-    let ssrc = ssrc_from_name("sender");
+    let ssrc = ssrc_from_identity("sender-0:sender");
 
     let mut group = c.benchmark_group("srtp_decrypt");
 
@@ -292,7 +292,7 @@ fn bench_mls_key_export(c: &mut Criterion) {
 
     // setting up the MLS group (the group state is what we export keys from)
     let (group, sender, _key_material) = setup_mls_group();
-    let ssrc = ssrc_from_name("sender");
+    let ssrc = ssrc_from_identity("sender-0:sender");
 
     c.bench_function("mls_key_export", |b| {
         b.iter(|| {
@@ -303,7 +303,6 @@ fn bench_mls_key_export(c: &mut Criterion) {
             let (km, _key, _salt) = export_srtp_keys(
                 black_box(&group),
                 sender.provider.crypto(),
-                black_box(b"sender"),
                 black_box(ssrc),
             );
             black_box(&km);
@@ -341,12 +340,12 @@ criterion_main!(benches);
 //      confidentiality (RFC 3711 §5.1), then HMAC-SHA1 truncated to 80 bits
 //      for authentication (RFC 3711 §5.2). Two separate passes over the data.
 //
-//    - NULL_HMAC_SHA1_80 (RFC 3711 §5): same as above but without encryption (RFC 3711 §5.1). 
+//    - NULL_HMAC_SHA1_80 (RFC 3711 §5): same as above but without encryption (RFC 3711 §5.1).
 //
-// 2. MLS join cost: time for a new member to join a group (i.e., welcome processing time), 
+// 2. MLS join cost: time for a new member to join a group (i.e., welcome processing time),
 //    varying group size (2, 10, 50, 200, 500, 1000, 5000 members).
 //
-// 3. MLS rekey cost: time to perform a group rekey (i.e., commit processing time) 
+// 3. MLS rekey cost: time to perform a group rekey (i.e., commit processing time)
 //    for different group sizes.
 //
 // 4. Memory usage (both MLS and SRTP) for different group size.
