@@ -615,7 +615,7 @@ async fn verify_group_members(
 // ---------------------------------------------------------------------------
 
 async fn send_srtp(tag: &str, label: &str, ssrc: u32, key_material: &[u8], num_packets: u32) {
-    // creating a libsrtp sender session configured with AES-128-CM + HMAC-SHA1-80,
+    // creating a libsrtp sender session configured with AES-128-GCM,
     // keyed with the MLS-exported master key and salt.
     let mut srtp_session = create_sender_session(key_material);
 
