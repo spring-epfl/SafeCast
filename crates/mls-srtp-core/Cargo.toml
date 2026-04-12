@@ -21,11 +21,16 @@ socket2 = { workspace = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
+clap = { workspace = true }
 
 [[bench]]
 name = "srtp_benchmarks"
 harness = false
 
 [[bench]]
-name = "srtp_throughput"
+name = "srtp_throughput_manual"
+harness = false
+
+[[bench]]
+name = "srtp_throughput_criterion"
 harness = false
