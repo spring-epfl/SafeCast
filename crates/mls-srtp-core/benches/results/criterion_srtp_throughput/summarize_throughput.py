@@ -4,8 +4,8 @@ Reads Criterion JSON output from the srtp_throughput benchmark and prints
 a summary with throughput in Gbps and speedup relative to a target bitrate.
 
 Usage:
-    python3 crates/mls-srtp-core/benches/results/summarize_throughput.py
-    python3 crates/mls-srtp-core/benches/results/summarize_throughput.py --target-gbps 2.4
+    python3 crates/mls-srtp-core/benches/results/criterion_srtp_throughput/summarize_throughput.py
+    python3 crates/mls-srtp-core/benches/results/criterion_srtp_throughput/summarize_throughput.py --target-gbps 2.4
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import sys
 
 CRITERION_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "..", "..", "..", "..",
+    "..", "..", "..", "..", "..",
     "target",
     "criterion",
     "srtp_throughput",

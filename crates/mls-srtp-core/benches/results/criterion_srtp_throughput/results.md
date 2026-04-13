@@ -30,11 +30,11 @@ In both cases, SRTP encryption is far from a bottleneck for real-time 1080p60 vi
 
 ## Criterion report
 
-A full HTML report is available at `criterion_srtp_throughput/report/index.html`.
+A full HTML report is available at `report/index.html`.
 
 ## Reproduction
 
 ```
 cargo bench --package mls-srtp-core --bench srtp_throughput_criterion
-python3 crates/mls-srtp-core/benches/results/summarize_throughput.py
+python3 crates/mls-srtp-core/benches/results/criterion_srtp_throughput/summarize_throughput.py
 ```
