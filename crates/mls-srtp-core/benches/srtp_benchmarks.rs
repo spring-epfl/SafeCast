@@ -55,6 +55,10 @@ const PAYLOAD_SIZES: &[(usize, &str)] = &[
     (800, "video_fragment_800B"),
     // H.264 FU-A fragment
     (1200, "video_fragment_1200B"),
+    // ST 2110-10 standard (1460 − 8 UDP − 12 RTP − 16 GCM tag)
+    (1424, "st2110_standard_1424B"),
+    // ST 2110-10 extended/jumbo (8960 − 8 UDP − 12 RTP − 16 GCM tag)
+    (8924, "st2110_jumbo_8924B"),
 ];
 
 /// Sets up a minimal 2-member MLS group and exports SRTP key material for the
