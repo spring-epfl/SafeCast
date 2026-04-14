@@ -2264,6 +2264,7 @@ name = "mls-srtp-core"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "clap 4.6.0",
  "criterion",
  "ds-lib",
  "hex",
@@ -2271,6 +2272,7 @@ dependencies = [
  "openmls_basic_credential",
  "openmls_rust_crypto",
  "openmls_traits",
+ "openssl",
  "reqwest",
  "serde",
  "serde_json",

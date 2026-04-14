@@ -1,6 +1,6 @@
 //! Criterion benchmarks for MLS-SRTP encryption, decryption, and key export.
 //!
-//! Run: cargo bench --package mls-srtp-core --bench srtp_benchmarks
+//! Run: cargo bench --package mls-srtp-core --bench srtp_operations
 //! Output: HTML reports are written to `target/criterion/`
 //!
 //! Benchmarks:
@@ -134,8 +134,10 @@ fn make_rtp_packet(payload_size: usize, seq: u16, ssrc: u32) -> RtpPacket {
 // ---------------------------------------------------------------------------
 
 /// Benchmarks SRTP encryption (protect) for each payload size. Measures the
-/// full sender-side cost: RTP packet construction, serialization, and
-/// encryption via libsrtp.
+/// full sender-side cost: RTP packet construction (`make_rtp_packet()`),
+/// serialization (`to_bytes()`), and encryption via libsrtp (`protect()`).
+/// The decrypt benchmark mirrors this by including RTP parsing
+/// (`from_bytes()`) after decryption.
 fn bench_srtp_encrypt(c: &mut Criterion) {
 
     // initializing libsrtp
@@ -196,7 +198,10 @@ fn bench_srtp_encrypt(c: &mut Criterion) {
 // ---------------------------------------------------------------------------
 
 /// Benchmarks SRTP decryption (unprotect) for each payload size. Pre-encrypts
-/// a large batch of packets, then measures the per-packet decryption cost.
+/// a large batch of packets, then measures the per-packet decryption cost
+/// including RTP parsing (`RtpPacket::from_bytes()`), which is the
+/// receiver-side equivalent of the packet construction + serialization
+/// measured in the encrypt benchmark.
 fn bench_srtp_decrypt(c: &mut Criterion) {
 
     // initializing libsrtp
@@ -275,7 +280,13 @@ fn bench_srtp_decrypt(c: &mut Criterion) {
                 receiver_session
                     .unprotect(&mut encrypted[idx])
                     .expect("unprotect failed");
-                black_box(&encrypted[idx]);
+
+                // parsing the decrypted RTP bytes back into an RtpPacket
+                // struct (the receiver-side equivalent of make_rtp_packet()
+                // + to_bytes() in the encrypt benchmark)
+                let pkt = RtpPacket::from_bytes(&encrypted[idx])
+                    .expect("RTP parse failed");
+                black_box(&pkt);
                 idx += 1;
             });
         });
