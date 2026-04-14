@@ -22,6 +22,7 @@ socket2 = { workspace = true }
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 clap = { workspace = true }
+openssl = "0.10"
 
 [[bench]]
 name = "srtp_benchmarks"
@@ -29,8 +30,20 @@ harness = false
 
 [[bench]]
 name = "srtp_throughput_manual"
+path = "benches/srtp_throughput/srtp_throughput_manual.rs"
 harness = false
 
 [[bench]]
 name = "srtp_throughput_criterion"
+path = "benches/srtp_throughput/srtp_throughput_criterion.rs"
+harness = false
+
+[[bench]]
+name = "srtp_scaling"
+path = "benches/payload_scaling/srtp_scaling.rs"
+harness = false
+
+[[bench]]
+name = "aes_gcm_baseline"
+path = "benches/payload_scaling/aes_gcm_baseline.rs"
 harness = false
