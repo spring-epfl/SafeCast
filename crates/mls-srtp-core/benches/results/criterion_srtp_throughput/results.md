@@ -36,5 +36,5 @@ A full HTML report is available at `report/index.html`.
 
 ```
 cargo bench --package mls-srtp-core --bench srtp_throughput_criterion
-python3 crates/mls-srtp-core/benches/results/criterion_srtp_throughput/summarize_throughput.py
+python3 crates/mls-srtp-core/benches/srtp_throughput/summarize_throughput.py
 ```
