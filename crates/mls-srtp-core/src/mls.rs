@@ -18,7 +18,7 @@ use std::hash::{Hash, Hasher};
 use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
-use openmls_traits::{types::Ciphersuite, OpenMlsProvider};
+use openmls_traits::types::Ciphersuite;
 
 /// MLS ciphersuite used throughout the demo.
 /// AES-128-GCM here matches the SRTP cipher (AEAD_AES_128_GCM).
@@ -163,4 +163,66 @@ pub fn export_srtp_keys(
     key_material.extend_from_slice(&master_salt);
 
     (key_material, master_key, master_salt)
+}
+
+/// Creates a rekey commit (self-update) and advances the sender's group
+/// to the new epoch.
+///
+/// A rekey is an MLS self-update commit (RFC 9420 §12.1.2): it rotates the
+/// committer's leaf node (fresh HPKE key pair) and encrypts new path secrets
+/// to each copath node. The resulting commit carries an UpdatePath that lets every other
+/// member derive the new epoch's key schedule.
+///
+/// After this call the sender's group state is at the new epoch; calling
+/// `export_srtp_keys()` will return fresh SRTP key material.
+///
+/// Returns the commit message to distribute to all other group members.
+pub fn create_rekey_commit(
+    group: &mut MlsGroup,
+    provider: &OpenMlsRustCrypto,
+    signer: &SignatureKeyPair,
+) -> MlsMessageOut {
+
+    // Generating a fresh leaf node and encrypting path secrets to copath nodes.
+    // This creates a pending commit containing the UpdatePath.
+    let commit = group
+        .self_update(provider, signer, LeafNodeParameters::default())
+        .expect("self_update failed")
+        .into_commit();
+
+    // merging the pending commit to advance our own group state to the new epoch
+    group
+        .merge_pending_commit(provider)
+        .expect("merge_pending_commit failed");
+
+    commit
+}
+
+/// Processes an incoming commit from another group member, advancing
+/// the receiver's group to the new epoch.
+///
+/// Decrypts the commit's UpdatePath, recomputes the tree hash, and derives
+/// the new epoch secret. After this, the group's `exporter_secret` has
+/// changed and `export_srtp_keys()` will return fresh SRTP key material.
+pub fn process_commit(
+    group: &mut MlsGroup,
+    provider: &OpenMlsRustCrypto,
+    commit: MlsMessageOut,
+) {
+    // Decrypting the commit, verifying signatures, and validating the UpdatePath.
+    // This produces a staged commit that is ready to be merged.
+    let processed = group
+        .process_message(provider, commit.into_protocol_message().unwrap())
+        .expect("process_message failed");
+
+    // extracting the staged commit and merging it to advance to the new epoch
+    if let ProcessedMessageContent::StagedCommitMessage(staged_commit) =
+        processed.into_content()
+    {
+        group
+            .merge_staged_commit(provider, *staged_commit)
+            .expect("merge_staged_commit failed");
+    } else {
+        panic!("expected StagedCommitMessage from process_message");
+    }
 }
