@@ -19,14 +19,23 @@ serde_json = { workspace = true }
 base64 = { workspace = true }
 socket2 = { workspace = true }
 
+[build-dependencies]
+cc = "1"
+pkg-config = "0.3"
+
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 clap = { workspace = true }
 openssl = "0.10"
 
 [[bench]]
-name = "mls_srtp_operations"
-path = "benches/mls_srtp_operations.rs"
+name = "srtp_operations"
+path = "benches/srtp_operations.rs"
+harness = false
+
+[[bench]]
+name = "key_derivation"
+path = "benches/key_derivation.rs"
 harness = false
 
 [[bench]]
@@ -47,4 +56,9 @@ harness = false
 [[bench]]
 name = "aes_gcm_baseline"
 path = "benches/payload_scaling/aes_gcm_baseline.rs"
+harness = false
+
+[[bench]]
+name = "rekey"
+path = "benches/rekey.rs"
 harness = false
