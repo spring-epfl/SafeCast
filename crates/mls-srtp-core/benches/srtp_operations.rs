@@ -1,12 +1,11 @@
-//! Criterion benchmarks for MLS-SRTP encryption, decryption, and key export.
+//! Criterion benchmarks for SRTP encryption and decryption.
 //!
-//! Run: cargo bench --package mls-srtp-core --bench mls_srtp_operations
+//! Run: cargo bench --package mls-srtp-core --bench srtp_operations
 //! Output: HTML reports are written to `target/criterion/`
 //!
 //! Benchmarks:
 //!   1. SRTP encryption (protect) across varying RTP payload sizes
 //!   2. SRTP decryption (unprotect) across varying RTP payload sizes
-//!   3. MLS exporter key derivation
 //!
 //! Note on packet encryption overhead: SRTP with AES-128-GCM adds a constant 16-byte
 //! authentication tag to every packet, regardless of payload size. This is
@@ -295,43 +294,12 @@ fn bench_srtp_decrypt(c: &mut Criterion) {
     group.finish();
 }
 
-// ---------------------------------------------------------------------------
-// Benchmark 3: MLS Key Export
-// ---------------------------------------------------------------------------
-
-/// Benchmarks the MLS exporter key derivation: two calls to `export_secret`
-/// (one for the 16-byte master key, one for the 12-byte master salt). This
-/// operation happens once per MLS epoch change (i.e., when group membership
-/// changes), not per packet.
-fn bench_mls_key_export(c: &mut Criterion) {
-
-    // setting up the MLS group (the group state is what we export keys from)
-    let (group, sender, _key_material) = setup_mls_group();
-    let ssrc = ssrc_from_identity("sender-0:sender");
-
-    c.bench_function("mls_key_export", |b| {
-        b.iter(|| {
-
-            // exporting SRTP key material: derives master_key (16 B) and
-            // master_salt (12 B) from the MLS exporter secret using
-            // HKDF-based key derivation
-            let (km, _key, _salt) = export_srtp_keys(
-                black_box(&group),
-                sender.provider.crypto(),
-                black_box(ssrc),
-            );
-            black_box(&km);
-        });
-    });
-}
-
 // registering all benchmark functions as a single group so criterion
 // runs them sequentially in one invocation
 criterion_group!(
     benches,
     bench_srtp_encrypt,
     bench_srtp_decrypt,
-    bench_mls_key_export,
 );
 
 // the main() entry point
