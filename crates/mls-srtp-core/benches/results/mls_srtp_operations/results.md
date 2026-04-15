@@ -1,6 +1,6 @@
-# SRTP Operations Benchmark Results
+# MLS-SRTP Operations Benchmark Results
 
-Results from `srtp_operations.rs`, which benchmarks three MLS-SRTP
+Results from `mls_srtp_operations.rs`, which benchmarks three MLS-SRTP
 operations using Criterion: encryption (`protect`), decryption (`unprotect`),
 and MLS key export.
 
@@ -106,5 +106,5 @@ payloads (0.2% for 8924 B jumbo frames).
 ## Reproduction
 
 ```
-cargo bench --package mls-srtp-core --bench srtp_operations
+cargo bench --package mls-srtp-core --bench mls_srtp_operations
 ```

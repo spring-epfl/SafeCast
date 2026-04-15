@@ -1,6 +1,6 @@
 //! Criterion benchmarks for MLS-SRTP encryption, decryption, and key export.
 //!
-//! Run: cargo bench --package mls-srtp-core --bench srtp_operations
+//! Run: cargo bench --package mls-srtp-core --bench mls_srtp_operations
 //! Output: HTML reports are written to `target/criterion/`
 //!
 //! Benchmarks:

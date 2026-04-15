@@ -5,7 +5,7 @@
 - [x] **Throughput:** sustained `protect()` throughput for ST 2110-10 payload sizes
   (standard 1424 B and jumbo 8924 B) against for example a 2.4 Gbps uncompressed 1080p60 target.
 
-- [ ] **Encryption + authentication:** per-packet AES-128-GCM `protect()` and
+- [x] **Encryption + authentication:** per-packet AES-128-GCM `protect()` and
   `unprotect()` cost across different payload sizes.
 
 - [ ] **Key derivation:** SRTP key derivation function that produces session-level

@@ -25,7 +25,8 @@ clap = { workspace = true }
 openssl = "0.10"
 
 [[bench]]
-name = "srtp_operations"
+name = "mls_srtp_operations"
+path = "benches/mls_srtp_operations.rs"
 harness = false
 
 [[bench]]
