@@ -27,7 +27,7 @@
 - [ ] **MLS join cost:** time for a new member to join a group (i.e., welcome
   processing time), varying group size (2, 10, 50, 200, 500, 1000, 5000 members).
 
-- [ ] **MLS rekey cost:** time to perform a group rekey (i.e., commit processing
+- [x] **MLS rekey cost:** time to perform a group rekey (i.e., commit processing
   time) for different group sizes.
 
 - [ ] **Memory usage** for different group sizes.
