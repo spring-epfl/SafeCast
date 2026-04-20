@@ -120,6 +120,8 @@ fn setup_group() -> Vec<(MlsGroup, MlsMember)> {
 //   2. The post-rekey keys are different from the pre-rekey keys
 // ---------------------------------------------------------------------------
 
+/// A self-update commit changes the epoch, causing all members to derive
+/// fresh SRTP keys that differ from the pre-rekey keys.
 #[test]
 fn rekey_rotates_srtp_keys() {
     let mut group = setup_group();
@@ -207,6 +209,8 @@ fn rekey_rotates_srtp_keys() {
 // rekey -> export new keys -> create SRTP sessions -> encrypt -> decrypt.
 // ---------------------------------------------------------------------------
 
+/// After a rekey, the freshly exported SRTP keys produce working SRTP
+/// sessions that can encrypt and decrypt.
 #[test]
 fn rekey_produces_working_srtp_sessions() {
     let mut group = setup_group();

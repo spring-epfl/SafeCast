@@ -69,6 +69,8 @@ fn setup_srtp_keys() -> (Vec<u8>, u32) {
 // These tests verify the minimal RTP packet serialization and parsing.
 // ---------------------------------------------------------------------------
 
+/// RTP `to_bytes` -> `from_bytes` round-trip preserves header fields
+/// and payload.
 #[test]
 fn rtp_serialize_deserialize_round_trip() {
     // building a minimal RTP packet with the fixed 12-byte header fields
@@ -99,6 +101,7 @@ fn rtp_serialize_deserialize_round_trip() {
     assert_eq!(parsed.payload, b"test payload");
 }
 
+/// `from_bytes` rejects inputs shorter than the 12-byte RTP header.
 #[test]
 fn rtp_from_bytes_rejects_short_input() {
     // an RTP packet needs at least 12 bytes for the fixed header;
@@ -115,6 +118,9 @@ fn rtp_from_bytes_rejects_short_input() {
 // unprotect (verify + decrypt).
 // ---------------------------------------------------------------------------
 
+/// A single RTP packet encrypted with `protect` and decrypted with
+/// `unprotect` recovers the original payload, with the expected 16-byte
+/// GCM tag overhead.
 #[test]
 fn srtp_encrypt_decrypt_single_packet() {
     // initializing libsrtp (must be called once before any SRTP operations)
@@ -172,6 +178,7 @@ fn srtp_encrypt_decrypt_single_packet() {
     println!("payload matches: {:?}", String::from_utf8_lossy(payload));
 }
 
+/// 10 sequential packets are each encrypted and decrypted correctly.
 #[test]
 fn srtp_encrypt_decrypt_multiple_packets() {
     srtp::ensure_init();
@@ -207,6 +214,7 @@ fn srtp_encrypt_decrypt_multiple_packets() {
     println!("10 packets encrypted and decrypted successfully");
 }
 
+/// Decryption with the wrong key fails.
 #[test]
 fn srtp_wrong_key_fails_decryption() {
     srtp::ensure_init();
@@ -240,6 +248,8 @@ fn srtp_wrong_key_fails_decryption() {
     println!("decryption with wrong key correctly rejected");
 }
 
+/// Replaying an already-decrypted packet is rejected by libsrtp's
+/// replay window (RFC 3711 §3.3.2).
 #[test]
 fn srtp_replay_protection_rejects_duplicate() {
     srtp::ensure_init();

@@ -62,7 +62,9 @@ fn setup_group(identities: &[&str]) -> Vec<(MlsGroup, MlsMember)> {
         .merge_pending_commit(&members[0].provider)
         .expect("merge_pending_commit failed");
 
-    // converting the Welcome to its wire format for processing
+    // `add_members` returns the Welcome wrapped in an MlsMessageOut.
+    // To pass it to `new_from_welcome`, we need to unwrap it:
+    // MlsMessageOut -> MlsMessageIn -> Welcome
     let welcome_in: MlsMessageIn = welcome.into();
     let welcome_msg = welcome_in.into_welcome().expect("expected Welcome");
 
@@ -107,6 +109,8 @@ fn setup_group(identities: &[&str]) -> Vec<(MlsGroup, MlsMember)> {
 // contains the expected number of members with the correct roles.
 // ---------------------------------------------------------------------------
 
+/// After group creation via Welcome, all members share the same epoch,
+/// group ID, and member count.
 #[test]
 fn group_creation_all_members_see_same_group() {
     let ids = ["creator-0:creator", "sender-1:sender", "receiver-2:receiver"];
@@ -140,6 +144,8 @@ fn group_creation_all_members_see_same_group() {
     println!("member count: 3");
 }
 
+/// The MLS group tree contains the correct number of senders and receivers
+/// based on the identity strings used during group creation.
 #[test]
 fn group_members_have_correct_roles() {
     let ids = [
@@ -190,6 +196,8 @@ fn group_members_have_correct_roles() {
 // from identity strings must be deterministic.
 // ---------------------------------------------------------------------------
 
+/// Sender and receiver derive identical SRTP key material (master key + salt)
+/// when exporting for the same SSRC at the same epoch.
 #[test]
 fn key_export_sender_receiver_agreement() {
     let ids = ["sender-0:sender", "receiver-1:receiver"];
@@ -224,6 +232,8 @@ fn key_export_sender_receiver_agreement() {
     println!("sender and receiver derive identical keys");
 }
 
+/// Two senders with different SSRCs produce different SRTP key material,
+/// since the SSRC is used as the MLS exporter context.
 #[test]
 fn key_export_different_senders_get_different_keys() {
     let ids = ["sender-0:sender", "sender-1:sender", "receiver-2:receiver"];
@@ -244,6 +254,8 @@ fn key_export_different_senders_get_different_keys() {
     println!("sender-1 SSRC=0x{ssrc1:08X}: {}", hex::encode(&km1));
 }
 
+/// `ssrc_from_identity` is deterministic: same input always produces the
+/// same SSRC, different inputs produce different SSRCs.
 #[test]
 fn ssrc_derived_from_identity_is_deterministic() {
     // the SSRC is derived by hashing the identity string, so the same
@@ -259,6 +271,8 @@ fn ssrc_derived_from_identity_is_deterministic() {
     println!("receiver-1:receiver -> 0x{ssrc3:08X}");
 }
 
+/// `parse_credential_identity` correctly splits "label:role" strings
+/// into their label and role components.
 #[test]
 fn credential_identity_parsing() {
     // `parse_credential_identity` splits "label:role" strings
