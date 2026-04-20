@@ -151,10 +151,13 @@ fn bench_srtp_encrypt(c: &mut Criterion) {
 
     for &(size, label) in PAYLOAD_SIZES {
 
-        // telling criterion how many bytes each iteration processes, so it
-        // can compute throughput (bytes/sec) in addition to raw latency
-        let rtp_len = RTP_HEADER_LEN + size;
-        group.throughput(Throughput::Bytes(rtp_len as u64));
+        // telling criterion how many bytes each iteration processes
+        // (using ciphertext size: header + payload + 16-byte GCM auth tag,
+        // matching the decrypt benchmark and other SRTP benchmarks)
+        // QUESTION: "+ 16-byte GCM auth tag" ok? This means that we compute
+        // on-the-wire throughput
+        let srtp_len = RTP_HEADER_LEN + size + GCM_TAG_LEN;
+        group.throughput(Throughput::Bytes(srtp_len as u64));
 
         group.bench_with_input(BenchmarkId::new("protect", label), &size, |b, &sz| {
 
