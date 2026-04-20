@@ -162,8 +162,6 @@ fn bench_mls_rekey(c: &mut Criterion) {
     {
         let mut bg = c.benchmark_group("create_rekey_commit");
         for (n, members) in &groups {
-
-            
             bg.bench_with_input(BenchmarkId::from_parameter(n), n, |b, _| {
                 b.iter_batched(
                     || (members[1].0.clone(), members[1].1.clone()),
@@ -208,8 +206,8 @@ fn bench_mls_rekey(c: &mut Criterion) {
 
     // --- Benchmark 3: SRTP key export only ---
     //
-    // Measures: export_srtp_keys (a single call to MLS export_secret +
-    // splitting the result into master key and salt). This isolates the
+    // Measures: export_srtp_keys (two calls to MLS export_secret: one
+    // for the master key, one for the master salt). This isolates the
     // exporter cost from the commit processing cost.
     {
         let mut bg = c.benchmark_group("export_srtp_keys");
@@ -217,14 +215,11 @@ fn bench_mls_rekey(c: &mut Criterion) {
             let ssrc = ssrc_from_identity("member-1:member");
 
             bg.bench_with_input(BenchmarkId::from_parameter(n), n, |b, _| {
-                b.iter_batched(
-                    || (members[0].0.clone(), members[0].1.clone()),
-                    |(grp, prov)| {
-                        let (km, _, _) = export_srtp_keys(&grp, prov.crypto(), ssrc);
-                        black_box(&km);
-                    },
-                    BatchSize::LargeInput,
-                );
+                b.iter(|| {
+                    let (km, _, _) =
+                        export_srtp_keys(&members[0].0, members[0].1.crypto(), ssrc);
+                    black_box(&km);
+                });
             });
         }
         bg.finish();
