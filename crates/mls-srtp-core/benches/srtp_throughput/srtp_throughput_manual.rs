@@ -90,7 +90,7 @@ struct Args {
 
 /// Builds a 2-member MLS group and exports SRTP key material for the sender.
 /// Returns (key_material, ssrc). Identical structure to the Criterion
-/// benchmark's `setup_mls_group` at `benches/srtp_benchmarks.rs`.
+/// benchmark's `setup_mls_group` at `benches/srtp_operations.rs`.
 fn setup_mls_group() -> (Vec<u8>, u32) {
 
     // creating two MLS members: one sender and one receiver
