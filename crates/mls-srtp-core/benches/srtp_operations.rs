@@ -343,10 +343,13 @@ fn bench_srtp_replay_rejection(c: &mut Criterion) {
                 .unprotect(&mut first)
                 .expect("first unprotect should succeed");
 
-            // now benchmarking the rejection path: every subsequent attempt to
-            // decrypt the same packet hits the replay window and is rejected
+            // Now benchmarking the rejection path: every subsequent attempt to
+            // decrypt the same packet hits the replay window and is rejected.
+            // We reuse the same buffer since libsrtp rejects before modifying it
+            // (otherwise we would have longer processing time for larger payloads, 
+            // which would confound the replay check benchmark)
+            let mut replay_buf = encrypted.clone();
             b.iter(|| {
-                let mut replay_buf = encrypted.clone();
                 let result = receiver_session.unprotect(&mut replay_buf);
                 debug_assert!(result.is_err());
                 black_box(&result);
