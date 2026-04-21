@@ -14,7 +14,7 @@
   at session start (and can be configured to refresh periodically via `key_derivation_rate`),
   not per packet. Expected to be negligible.
 
-- [ ] **Replay protection (receiver side):** the receiver maintains a sliding window
+- [x] **Replay protection (receiver side):** the receiver maintains a sliding window
   (default size 64) that tracks which packet indices have already been received.
   On each packet, the receiver extracts the index and checks whether it falls within
   the window and has already been seen. This is a simple bit-check operation and
