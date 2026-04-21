@@ -42,7 +42,7 @@ use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;
 
 /// Group sizes to benchmark.
-const GROUP_SIZES: &[usize] = &[2, 10, 50, 200, 500, 1000, 5000];
+const GROUP_SIZES: &[usize] = &[2, 10, 50, 200, 500]; // TODO: 1000 and 5000
 
 // ---------------------------------------------------------------------------
 // Group setup
