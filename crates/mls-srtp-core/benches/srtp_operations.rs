@@ -6,6 +6,7 @@
 //! Benchmarks:
 //!   1. SRTP encryption (protect) across varying RTP payload sizes
 //!   2. SRTP decryption (unprotect) across varying RTP payload sizes
+//!   3. SRTP replay protection: how fast libsrtp rejects a duplicate packet
 //!
 //! Note on packet encryption overhead: SRTP with AES-128-GCM adds a constant 16-byte
 //! authentication tag to every packet, regardless of payload size. This is
@@ -297,12 +298,72 @@ fn bench_srtp_decrypt(c: &mut Criterion) {
     group.finish();
 }
 
+// ---------------------------------------------------------------------------
+// Benchmark 3: SRTP Replay Protection
+// ---------------------------------------------------------------------------
+
+/// Benchmarks how fast SRTP rejects a replayed (duplicate) packet.
+///
+/// SRTP maintains a replay window (RFC 3711 §3.3.2) that tracks recently
+/// seen sequence numbers. When a duplicate arrives, it is rejected before
+/// any decryption happens (the check is just a bitmask lookup against the
+/// window). This benchmark measures the cost of that rejection path.
+///
+/// No throughput is reported because the payload is never decrypted: the
+/// rejection happens at the replay window check, so the cost should be
+/// roughly constant regardless of payload size. We parameterize by size
+/// anyway to confirm this.
+fn bench_srtp_replay_rejection(c: &mut Criterion) {
+
+    // initializing libsrtp
+    srtp::ensure_init();
+
+    // setting up the MLS group and exporting key material
+    let (_group, _sender, key_material) = setup_mls_group();
+    let ssrc = ssrc_from_identity("sender-0:sender");
+
+    let mut group = c.benchmark_group("srtp_replay_rejection");
+
+    for &(size, label) in PAYLOAD_SIZES {
+
+        group.bench_with_input(BenchmarkId::new("reject_replay", label), &size, |b, &sz| {
+
+            let mut sender_session = create_sender_session(&key_material);
+            let mut receiver_session = create_receiver_session(&key_material);
+
+            // encrypting a single packet
+            let pkt = make_rtp_packet(sz, 1, ssrc);
+            let mut buf = pkt.to_bytes();
+            sender_session.protect(&mut buf).expect("protect failed");
+            let encrypted = buf;
+
+            // decrypting it once so sequence number 1 enters the replay window
+            let mut first = encrypted.clone();
+            receiver_session
+                .unprotect(&mut first)
+                .expect("first unprotect should succeed");
+
+            // now benchmarking the rejection path: every subsequent attempt to
+            // decrypt the same packet hits the replay window and is rejected
+            b.iter(|| {
+                let mut replay_buf = encrypted.clone();
+                let result = receiver_session.unprotect(&mut replay_buf);
+                debug_assert!(result.is_err());
+                black_box(&result);
+            });
+        });
+    }
+
+    group.finish();
+}
+
 // registering all benchmark functions as a single group so criterion
 // runs them sequentially in one invocation
 criterion_group!(
     benches,
     bench_srtp_encrypt,
     bench_srtp_decrypt,
+    bench_srtp_replay_rejection,
 );
 
 // the main() entry point
