@@ -1,6 +1,6 @@
 # MLS-SRTP Operations Benchmark Results
 
-Results from `mls_srtp_operations.rs`, which benchmarks three MLS-SRTP
+Results from `srtp_operations.rs`, which benchmarks four MLS-SRTP
 operations using Criterion: encryption (`protect`), decryption (`unprotect`),
 replay protection, and MLS key export.
 
@@ -36,32 +36,32 @@ size classes, after subtracting protocol headers (UDP 8 B + RTP 12 B + GCM tag 1
 
 | Payload  | Latency  | Throughput  | Throughput (Gbps)   |
 |----------|----------|-------------|---------------------|
-| 40 B     | 361 ns   | 137 MiB/s   | 1.15 Gbps           |
-| 160 B    | 375 ns   | 437 MiB/s   | 3.67 Gbps           |
-| 800 B    | 484 ns   | 1.56 GiB/s  | 13.42 Gbps          |
-| 1200 B   | 530 ns   | 2.13 GiB/s  | 18.29 Gbps          |
-| 1424 B   | 561 ns   | 2.39 GiB/s  | 20.48 Gbps          |
-| 8924 B   | 1656 ns  | 5.03 GiB/s  | 43.14 Gbps          |
+| 40 B     | 358 ns   | 181 MiB/s   | 1.52 Gbps           |
+| 160 B    | 371 ns   | 483 MiB/s   | 4.05 Gbps           |
+| 800 B    | 482 ns   | 1.60 GiB/s  | 13.74 Gbps          |
+| 1200 B   | 537 ns   | 2.13 GiB/s  | 18.29 Gbps          |
+| 1424 B   | 562 ns   | 2.41 GiB/s  | 20.67 Gbps          |
+| 8924 B   | 1660 ns  | 5.02 GiB/s  | 43.11 Gbps          |
 
-Throughput (MiB/s, GiB/s) is reported by Criterion based on the RTP packet
-size (12 B header + payload). The Gbps column is calculated as
-`(12 B header + payload) × 8 bits / latency`.
+Throughput (MiB/s, GiB/s) is reported by Criterion based on the SRTP packet
+size (12 B header + payload + 16 B GCM tag). The Gbps column is calculated as
+`(12 B header + payload + 16 B GCM tag) × 8 bits / latency`.
 
-Latency ranges from 361 ns (40 B speech) to 1.66 µs (8924 B jumbo).
-For audio, 361 ns is 0.002% of a 20 ms frame interval.
+Latency ranges from 358 ns (40 B speech) to 1.66 µs (8924 B jumbo).
+For audio, 358 ns is 0.002% of a 20 ms frame interval.
 At the ST 2110 standard MTU payload size (1424 B), a single core achieves
-20.48 Gbps, which is 8.5x the 2.4 Gbps throughput for uncompressed 1080p60.
+20.67 Gbps, which is 8.6x the 2.4 Gbps throughput for uncompressed 1080p60.
 
 ## SRTP decryption (unprotect)
 
 | Payload  | Latency  | Throughput  | Throughput (Gbps)   |
 |----------|----------|-------------|---------------------|
 | 40 B     | 450 ns   | 144 MiB/s   | 1.21 Gbps           |
-| 160 B    | 480 ns   | 373 MiB/s   | 3.13 Gbps           |
-| 800 B    | 665 ns   | 1.16 GiB/s  | 9.96 Gbps           |
-| 1200 B   | 707 ns   | 1.62 GiB/s  | 13.90 Gbps          |
-| 1424 B   | 736 ns   | 1.84 GiB/s  | 15.78 Gbps          |
-| 8924 B   | 1486 ns  | 5.61 GiB/s  | 48.19 Gbps          |
+| 160 B    | 483 ns   | 371 MiB/s   | 3.11 Gbps           |
+| 800 B    | 701 ns   | 1.10 GiB/s  | 9.45 Gbps           |
+| 1200 B   | 712 ns   | 1.61 GiB/s  | 13.80 Gbps          |
+| 1424 B   | 723 ns   | 1.87 GiB/s  | 16.07 Gbps          |
+| 8924 B   | 1467 ns  | 5.68 GiB/s  | 48.82 Gbps          |
 
 Throughput (MiB/s, GiB/s) is reported by Criterion based on the SRTP packet
 size (12 B header + payload + 16 B GCM tag). The Gbps column is calculated as

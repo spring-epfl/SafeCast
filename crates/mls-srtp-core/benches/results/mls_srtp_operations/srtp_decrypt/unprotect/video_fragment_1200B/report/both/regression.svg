@@ -271,7 +271,7 @@
 <g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
 	<g stroke='none' shape-rendering='crispEdges'>
 		<polygon fill = 'rgb(227,  26,  28)' fill-opacity = '0.250000' points = '64.14,644.40 64.14,644.40 64.14,644.40 '/>
-		<polygon fill = 'rgb(227,  26,  28)' fill-opacity = '0.250000' points = '64.14,644.40 1230.01,125.89 1230.01,60.75 '/>
+		<polygon fill = 'rgb(227,  26,  28)' fill-opacity = '0.250000' points = '64.14,644.40 1190.32,145.53 1190.32,93.36 '/>
 	</g>
 </g>
 	</g>
@@ -279,7 +279,7 @@
 <g fill="none" color="black" stroke="currentColor" stroke-width="1.00" stroke-linecap="butt" stroke-linejoin="miter">
 	<g stroke='none' shape-rendering='crispEdges'>
 		<polygon fill = 'rgb( 31, 120, 180)' fill-opacity = '0.250000' points = '64.14,644.40 64.14,644.40 64.14,644.40 '/>
-		<polygon fill = 'rgb( 31, 120, 180)' fill-opacity = '0.250000' points = '64.14,644.40 1230.01,127.95 1230.01,73.94 '/>
+		<polygon fill = 'rgb( 31, 120, 180)' fill-opacity = '0.250000' points = '64.14,644.40 1190.32,142.02 1190.32,89.34 '/>
 	</g>
 </g>
 	</g>
@@ -292,7 +292,7 @@
 	</g>
 </g>
 <g fill="none" color="black" stroke="currentColor" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter">
-	<path stroke='rgb(227,  26,  28)'  d='M80.92,72.01 L123.48,72.01 M64.14,644.40 L1230.01,92.42  '/></g>
+	<path stroke='rgb(227,  26,  28)'  d='M80.92,72.01 L123.48,72.01 M64.14,644.40 L1190.32,118.04  '/></g>
 	</g>
 	<g id="gnuplot_plot_4" ><title>New sample</title>
 <g fill="none" color="black" stroke="currentColor" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter">
@@ -301,7 +301,7 @@
 	</g>
 </g>
 <g fill="none" color="black" stroke="currentColor" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter">
-	<path stroke='rgb( 31, 120, 180)'  d='M80.92,90.01 L123.48,90.01 M64.14,644.40 L1230.01,99.49  '/></g>
+	<path stroke='rgb( 31, 120, 180)'  d='M80.92,90.01 L123.48,90.01 M64.14,644.40 L1190.32,114.28  '/></g>
 	</g>
 <g fill="none" color="black" stroke="currentColor" stroke-width="2.00" stroke-linecap="butt" stroke-linejoin="miter">
 </g>
