@@ -2,7 +2,7 @@
 
 Results from `mls_srtp_operations.rs`, which benchmarks three MLS-SRTP
 operations using Criterion: encryption (`protect`), decryption (`unprotect`),
-and MLS key export.
+replay protection, and MLS key export.
 
 Both benchmarks include RTP packet handling overhead to reflect realistic
 end-to-end costs: the encrypt benchmark includes packet construction and
@@ -68,11 +68,10 @@ size (12 B header + payload + 16 B GCM tag). The Gbps column is calculated as
 `(12 B header + payload + 16 B GCM tag) × 8 bits / latency`.
 
 Decryption is ~20-35% slower than encryption across all payload sizes.
-AES-GCM itself is symmetric (both sides compute GHASH + AES-CTR). 
-The difference comes from libsrtp's replay protection on the
-receiver side: checking whether the packet index has been seen before in a
-sliding window.
-TODO: check if this is true by running some extra benchmarks
+AES-GCM itself is symmetric (both sides compute GHASH + AES-CTR).
+The replay protection benchmark below shows that the replay window check
+costs only ~3.6 ns, so it does not explain the difference. 
+TODO: investigate
 
 ## MLS key export
 
@@ -84,6 +83,26 @@ This derives the 16-byte SRTP master key and 12-byte master salt from the
 MLS exporter secret using HKDF. It runs once per MLS epoch change (when
 group membership changes), not per packet. 
 At 4.17 µs, it is negligible in practice.
+
+## SRTP replay protection
+
+| Payload  | Latency  |
+|----------|----------|
+| 40 B     | 3.64 ns  |
+| 160 B    | 3.56 ns  |
+| 800 B    | 3.58 ns  |
+| 1200 B   | 3.55 ns  |
+| 1424 B   | 3.55 ns  |
+| 8924 B   | 3.55 ns  |
+
+Measures how fast libsrtp rejects a replayed (duplicate) packet. SRTP
+maintains a sliding replay window (RFC 3711 §3.3.2) that tracks recently
+seen sequence numbers. When a duplicate arrives, it is rejected via a
+bitmask lookup before any decryption occurs.
+
+The cost is ~3.6 ns and constant across all payload sizes, confirming that
+the rejection happens before touching the payload. At 3.6 ns per check,
+replay protection adds negligible overhead to the receiver path.
 
 ## Packet overhead
 
