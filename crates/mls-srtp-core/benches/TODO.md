@@ -4,21 +4,25 @@
 
 - [x] **Throughput:** sustained `protect()` throughput for ST 2110-10 payload sizes
   (standard 1424 B and jumbo 8924 B) against for example a 2.4 Gbps uncompressed 1080p60 target.
+  ---> `results/criterion_srtp_throughput/results.md`
 
 - [x] **Encryption + authentication:** per-packet AES-128-GCM `protect()` and
   `unprotect()` cost across different payload sizes.
+  ---> `results/mls_srtp_operations/results.md`
 
-- [ ] **Key derivation:** SRTP key derivation function that produces session-level
+- [x] **Key derivation:** SRTP key derivation function that produces session-level
   cipher and salt keys from the master key (with AES-GCM there is no separate
   authentication key, since GCM handles authentication internally). This runs once
   at session start (and can be configured to refresh periodically via `key_derivation_rate`),
   not per packet. Expected to be negligible.
+  ---> `results/key_derivation/results.md`
 
 - [x] **Replay protection (receiver side):** the receiver maintains a sliding window
   (default size 64) that tracks which packet indices have already been received.
   On each packet, the receiver extracts the index and checks whether it falls within
   the window and has already been seen. This is a simple bit-check operation and
   should be negligible.
+  ---> `results/mls_srtp_operations/results.md`
 
 - [ ] **Memory usage** for different group sizes.
 
@@ -29,6 +33,7 @@
 
 - [x] **MLS rekey cost:** time to perform a group rekey (i.e., commit processing
   time) for different group sizes.
+  ---> `results/mls_rekey/results.md`
 
 - [ ] **Memory usage** for different group sizes.
 
