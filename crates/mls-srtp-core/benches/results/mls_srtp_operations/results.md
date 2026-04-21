@@ -1,8 +1,8 @@
 # MLS-SRTP Operations Benchmark Results
 
-Results from `srtp_operations.rs`, which benchmarks four MLS-SRTP
+Results from `srtp_operations.rs`, which benchmarks three SRTP
 operations using Criterion: encryption (`protect`), decryption (`unprotect`),
-replay protection, and MLS key export.
+and replay protection.
 
 Both benchmarks include RTP packet handling overhead to reflect realistic
 end-to-end costs: the encrypt benchmark includes packet construction and
@@ -72,17 +72,6 @@ AES-GCM itself is symmetric (both sides compute GHASH + AES-CTR).
 The replay protection benchmark below shows that the replay window check
 costs only ~3.6 ns, so it does not explain the difference. 
 TODO: investigate
-
-## MLS key export
-
-| Operation                        | Latency  |
-|----------------------------------|----------|
-| `export_secret` x2 (key + salt)  | 4.17 µs  |
-
-This derives the 16-byte SRTP master key and 12-byte master salt from the
-MLS exporter secret using HKDF. It runs once per MLS epoch change (when
-group membership changes), not per packet. 
-At 4.17 µs, it is negligible in practice.
 
 ## SRTP replay protection
 

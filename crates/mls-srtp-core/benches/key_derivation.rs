@@ -38,6 +38,7 @@ use openmls_traits::OpenMlsProvider;
 // FFI binding to the C implementation in benches/c/srtp_kdf.c.
 // Copy-pasted libsrtp2 KDF.
 unsafe extern "C" {
+    fn srtp_kdf_ensure_init() -> i32;
     fn srtp_kdf_derive(
         key_material: *const u8,     // 30 bytes in (16 key + 12 salt + 2 padding)
         rtp_cipher_key: *mut u8,     // 16 bytes out
@@ -54,6 +55,8 @@ const SRTP_AES_ICM_128_KEY_LEN_WSALT: usize = 30;
 /// Pads the 28-byte key material (16 key + 12 salt) to 30 bytes
 /// to match SRTP_AES_ICM_128_KEY_LEN_WSALT (the AES-ICM KDF expects
 /// a 14-byte salt, so we zero-pad the 12-byte GCM salt by 2 bytes).
+///
+/// Caller must call `srtp_kdf_ensure_init()` once before the first call.
 fn srtp_kdf(master_key: &[u8; 16], master_salt: &[u8; 12]) {
 
     // packing master key and salt into the 30-byte buffer the C KDF expects
@@ -78,7 +81,7 @@ fn srtp_kdf(master_key: &[u8; 16], master_salt: &[u8; 12]) {
             rtcp_salt.as_mut_ptr(),
         )
     };
-    assert_eq!(ret, 0, "SRTP KDF failed");
+    assert_eq!(ret, 0, "SRTP KDF failed with code {ret}");
 
     // preventing the compiler from optimizing away the derived keys
     black_box(&rtp_cipher_key);
@@ -88,9 +91,14 @@ fn srtp_kdf(master_key: &[u8; 16], master_salt: &[u8; 12]) {
 }
 
 /// Sets up a minimal 2-member MLS group and exports SRTP key material for the
-/// sender. Returns the group, the sender member, and the separated master key
+/// sender. Also initializes the libsrtp crypto kernel for the C KDF benchmark.
+/// Returns the group, the sender member, and the separated master key
 /// and master salt.
 fn setup_mls_group() -> (MlsGroup, MlsMember, [u8; 16], [u8; 12]) {
+
+    // initializing the libsrtp crypto kernel (needed for the C KDF benchmark)
+    let ret = unsafe { srtp_kdf_ensure_init() };
+    assert_eq!(ret, 0, "srtp_kdf_ensure_init failed");
 
     // creating two members with credentials
     let sender = MlsMember::new("sender-0:sender");

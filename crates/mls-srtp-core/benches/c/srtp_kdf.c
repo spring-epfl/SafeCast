@@ -118,11 +118,25 @@ srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf)
 /* --- End of copy-pasted code --- */
 
 /*
+ * One-time initialization: must be called before srtp_kdf_derive().
+ * Ensures the libsrtp crypto kernel is ready.
+ */
+int srtp_kdf_ensure_init(void)
+{
+    srtp_err_status_t stat = srtp_init();
+    if (stat != srtp_err_status_ok && stat != srtp_err_status_bad_param)
+        return -1;
+    return 0;
+}
+
+/*
  * Entry point for the Rust benchmark: runs the full SRTP KDF for
  * AES-128-GCM, matching the sequence in srtp_stream_init_keys().
  *
  * key_material must be 30 bytes: master_key (16) || master_salt (12)
  * || 2 zero-padding bytes (to match SRTP_AES_ICM_128_KEY_LEN_WSALT = 30).
+ *
+ * Caller must call srtp_kdf_ensure_init() once before the first call.
  */
 int srtp_kdf_derive(const uint8_t *key_material, /* 30 bytes in  */
                     uint8_t *rtp_cipher_key,      /* 16 bytes out */
