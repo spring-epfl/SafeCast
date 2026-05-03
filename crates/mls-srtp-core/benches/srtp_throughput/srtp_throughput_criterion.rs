@@ -59,10 +59,38 @@ use openmls::prelude::*;
 /// AES-128-GCM authentication tag length in bytes (RFC 7714).
 const GCM_TAG_LEN: usize = 16;
 
-/// ST 2110-10 payload sizes: standard (1424 B) and extended/jumbo (8924 B).
+/// Payload sizes spanning the full range from tiny to jumbo.
+///
+/// Three categories sorted in ascending order:
+///   - Powers of 2 (16 B .. 4096 B) for the throughput scaling curve
+///   - Application-realistic sizes: 160 B (G.711 speech, 20 ms ptime),
+///     800 B and 1200 B (typical video)
+///   - ST 2110-10 MTU-derived sizes: 1424 B (standard) and 8924 B (jumbo),
+///     as computed in the module-level doc comment above
 const PAYLOAD_SIZES: &[(usize, &str)] = &[
-    (1424, "1424B_standard"),
-    (8924, "8924B_jumbo"),
+    // powers of 2
+    (16,    "0016B"),
+    (32,    "0032B"),
+    // powers of 2 (continued)
+    (40,    "0040B"),
+    (64,    "0064B"),
+    (128,   "0128B"),
+    // application-realistic: G.711 speech at 20 ms
+    (160,   "0160B_speech"),
+    // powers of 2 (continued)
+    (256,   "0256B"),
+    (512,   "0512B"),
+    // application-realistic: typical video packet sizes
+    (800,   "0800B_video"),
+    (1024,  "1024B"),
+    (1200,  "1200B_video"),
+    // ST 2110-10 standard MTU (1460 − 8 − 12 − 16 = 1424)
+    (1424,  "1424B_standard"),
+    // powers of 2 (continued)
+    (2048,  "2048B"),
+    (4096,  "4096B"),
+    // ST 2110-10 jumbo MTU (8960 − 8 − 12 − 16 = 8924)
+    (8924,  "8924B_jumbo"),
 ];
 
 /// Builds a 2-member MLS group and exports SRTP key material for the sender.
@@ -114,8 +142,8 @@ fn setup_mls_group() -> (Vec<u8>, u32) {
     (key_material, ssrc)
 }
 
-/// Benchmarks sustained SRTP encryption throughput for each ST 2110-10
-/// payload size class. Uses `iter_custom` to time only the `protect()`
+/// Benchmarks sustained SRTP encryption throughput for each payload size
+/// in [`PAYLOAD_SIZES`]. Uses `iter_custom` to time only the `protect()`
 /// call itself.
 fn bench_srtp_throughput(c: &mut Criterion) {
 
