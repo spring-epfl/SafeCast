@@ -67,11 +67,17 @@ Throughput (MiB/s, GiB/s) is reported by Criterion based on the SRTP packet
 size (12 B header + payload + 16 B GCM tag). The Gbps column is calculated as
 `(12 B header + payload + 16 B GCM tag) × 8 bits / latency`.
 
-Decryption is ~20-35% slower than encryption across all payload sizes.
-AES-GCM itself is symmetric (both sides compute GHASH + AES-CTR).
-The replay protection benchmark below shows that the replay window check
-costs only ~3.6 ns, so it does not explain the difference. 
-TODO: investigate
+Encryption is consistently ~100-140 ns slower than decryption across all
+payload sizes. This is a fixed per-packet overhead (not per-byte), caused
+by a bug in libsrtp's OpenSSL backend: `srtp_aes_gcm_openssl_set_aad()`
+unconditionally calls `EVP_CIPHER_CTX_ctrl(SET_TAG)` with a dummy tag
+before processing AAD, but this call is invalid on encrypt contexts.
+OpenSSL 3 rejects it and invokes `ERR_raise()`, which costs ~120 ns per
+call due to per-thread error stack management. The fix exists upstream
+(https://github.com/cisco/libsrtp/commit/837ba9d99aa1163fa1a1d6eef39e1343f1a73d67) 
+but the Rust `srtp2-sys` crate bundles an older version that predates it. 
+See `benches/protect_unprotect_asymmetry/libsrtp_settag_bug.c` for a
+detailed investigation and reproduction.
 
 ## SRTP replay protection
 
