@@ -52,7 +52,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Through
 
 use mls_srtp_core::mls::{export_srtp_keys, ssrc_from_identity, MlsMember, CIPHERSUITE};
 use mls_srtp_core::rtp::RTP_HEADER_LEN;
-use mls_srtp_core::srtp_session::create_sender_session;
+use mls_srtp_core::srtp_session::{create_sender_session, create_receiver_session};
 
 use openmls::prelude::*;
 
@@ -241,5 +241,109 @@ fn bench_srtp_throughput(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_srtp_throughput);
+/// Benchmarks sustained SRTP decryption throughput for each payload size
+/// in [`PAYLOAD_SIZES`]. Uses `iter_custom` to time only the `unprotect()`
+/// call itself. Pre-encrypts a batch of packets to feed into the decrypt loop.
+fn bench_srtp_unprotect_throughput(c: &mut Criterion) {
+
+    // initializing libsrtp
+    srtp::ensure_init();
+
+    // setting up the MLS group and exporting key material (done once,
+    // outside the timed loop)
+    let (key_material, ssrc) = setup_mls_group();
+
+    // creating a Criterion benchmark group that will contain one
+    // benchmark per payload size
+    let mut group = c.benchmark_group("srtp_throughput");
+
+    // using a long measurement time (10 s) to get a sustained throughput
+    group.measurement_time(Duration::from_secs(10));
+
+    for &(payload_size, label) in PAYLOAD_SIZES {
+
+        // computing the plaintext and ciphertext sizes (same as protect bench)
+        let rtp_len = RTP_HEADER_LEN + payload_size;
+        let srtp_len = rtp_len + GCM_TAG_LEN;
+
+        // telling Criterion how many bytes each iteration processes
+        group.throughput(Throughput::Bytes(srtp_len as u64));
+
+        group.bench_with_input(
+            BenchmarkId::new("unprotect", label),
+            &payload_size,
+            |b, &_sz| {
+
+                // SRTP replay protection rejects duplicate packets, so each
+                // ciphertext can only be decrypted once. We pre-encrypt a
+                // large batch and consume them sequentially.
+                let batch_size: u16 = 50_000;
+
+                // Helper: creates a fresh sender session, encrypts batch_size
+                // packets, and returns a fresh receiver session ready to
+                // decrypt them.
+                let make_batch = || -> (Vec<Vec<u8>>, srtp::Session) {
+                    let mut sender = create_sender_session(&key_material);
+                    let mut buf = vec![0u8; srtp_len];
+
+                    // writing static RTP header fields
+                    buf[0] = 0x80; // V=2, P=0, X=0, CC=0
+                    buf[1] = 111;  // payload type (dynamic)
+                    buf[8..12].copy_from_slice(&ssrc.to_be_bytes());
+
+                    // encrypting batch_size packets with incrementing seq numbers
+                    let encrypted: Vec<Vec<u8>> = (0..batch_size)
+                        .map(|seq| {
+                            buf[2..4].copy_from_slice(&seq.to_be_bytes());
+                            buf[4..8].copy_from_slice(&(seq as u32).to_be_bytes());
+                            buf.truncate(rtp_len);
+                            sender.protect(&mut buf).expect("protect failed");
+                            buf.clone()
+                        })
+                        .collect();
+
+                    // creating the receiver session keyed with the same material
+                    let receiver = create_receiver_session(&key_material);
+                    (encrypted, receiver)
+                };
+
+                // preparing the initial batch
+                let (mut encrypted, mut receiver) = make_batch();
+                let mut idx = 0usize;
+
+                // using iter_custom to time only the unprotect() call,
+                // excluding batch preparation overhead
+                b.iter_custom(|iters| {
+                    let mut total = Duration::ZERO;
+                    for _ in 0..iters {
+
+                        // refreshing batch if exhausted (happens only 1 in
+                        // 50,000 iterations; criterion's outlier detection
+                        // filters it)
+                        if idx >= encrypted.len() {
+                            let (e, r) = make_batch();
+                            encrypted = e;
+                            receiver = r;
+                            idx = 0;
+                        }
+
+                        // timing only the unprotect() call itself
+                        let t0 = Instant::now();
+                        receiver.unprotect(&mut encrypted[idx]).expect("unprotect failed");
+                        total += t0.elapsed();
+
+                        // preventing the compiler from optimizing away the result
+                        black_box(&encrypted[idx]);
+                        idx += 1;
+                    }
+                    total
+                });
+            },
+        );
+    }
+
+    group.finish();
+}
+
+criterion_group!(benches, bench_srtp_throughput, bench_srtp_unprotect_throughput);
 criterion_main!(benches);
