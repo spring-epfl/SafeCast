@@ -39,3 +39,10 @@ hex = "0.4"
 base64 = "0.22"
 socket2 = { version = "0.5", features = ["all"] }
 clap = { version = "4", features = ["derive"] }
+
+# Overriding srtp2-sys with our fork that bundles libsrtp v2.8.0
+# (original srtp2-sys bundled v2.3.0 which had a SET_TAG bug causing
+# ~120 ns overhead on every protect() call: see
+# crates/mls-srtp-core/benches/protect_unprotect_asymmetry/)
+[patch.crates-io]
+srtp2-sys = { git = "https://github.com/ArmanKolozyan/srtp2-sys.git" }
