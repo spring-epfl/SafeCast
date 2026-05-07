@@ -67,12 +67,19 @@ fn group_sizes() -> Vec<usize> {
 /// rather than just group size.
 ///
 /// Optimization: Only the creator (member 0) and member 1 maintain
-/// up-to-date group state. Other members are added to grow the tree to size
-/// `n` but their state is discarded after they self-update. This avoids the
-/// O(n²) setup cost of having all members process every commit. 
-/// The benchmarks only use members 0 and 1 anyway (sender and receiver roles).
+/// up-to-date group state. Each additional member is added, joins via
+/// Welcome, and immediately self-updates — which populates all internal
+/// nodes along their direct path to the root with fresh HPKE key pairs.
+/// Members 0 and 1 process both the add and the self-update commit, so
+/// their local ratchet tree reflects the newly filled nodes. The new
+/// member's own group state is then discarded: it doesn't need to stay
+/// around because it won't participate in the benchmarks. The
+/// performance gain comes from avoiding having all members process every
+/// subsequent add/self-update. Without this, member i's join would
+/// require all i-1 existing members to process two commits, giving
+/// O(n^2) total work.
 ///
-/// Returns exactly 2 entries: [(member 0 state), (member 1 state)].
+/// Returns 2 entries: [(member 0 state), (member 1 state)].
 fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)> {
     assert!(n >= 2, "need at least 2 members for a meaningful group");
 
