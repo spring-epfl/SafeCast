@@ -71,7 +71,6 @@ const PAYLOAD_SIZES: &[(usize, &str)] = &[
     // powers of 2
     (16,    "0016B"),
     (32,    "0032B"),
-    // powers of 2 (continued)
     (40,    "0040B"),
     (64,    "0064B"),
     (128,   "0128B"),
