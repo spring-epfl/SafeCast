@@ -59,6 +59,11 @@ path = "benches/payload_scaling/aes_gcm_baseline.rs"
 harness = false
 
 [[bench]]
+name = "pep_throughput"
+path = "benches/pep_throughput.rs"
+harness = false
+
+[[bench]]
 name = "rekey"
 path = "benches/rekey.rs"
 harness = false
