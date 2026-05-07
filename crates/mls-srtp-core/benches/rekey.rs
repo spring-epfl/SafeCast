@@ -41,16 +41,7 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;
 
-/// Group sizes to benchmark (controlled via REKEY_GROUP_SIZES env var).
-/// Default: all sizes up to 1000. Set REKEY_GROUP_SIZES=5000 to include 5000.
-fn group_sizes() -> Vec<usize> {
-    let base = vec![2, 10, 50, 200, 500, 1000];
-    match std::env::var("REKEY_GROUP_SIZES") {
-        Ok(val) if val == "5000" => vec![5000],
-        Ok(val) if val == "all" => vec![2, 10, 50, 200, 500, 1000, 5000],
-        _ => base,
-    }
-}
+const GROUP_SIZES: &[usize] = &[2, 10, 50, 200, 500, 1000, 5000];
 
 // ---------------------------------------------------------------------------
 // Group setup
@@ -175,8 +166,7 @@ fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>
 fn bench_mls_rekey(c: &mut Criterion) {
 
     // pre-creating groups of each size (expensive, done once)
-    let sizes = group_sizes();
-    let groups: Vec<(usize, Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>)> = sizes
+    let groups: Vec<(usize, Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>)> = GROUP_SIZES
         .iter()
         .map(|&n| {
             eprintln!("[setup] Creating {n}-member group...");

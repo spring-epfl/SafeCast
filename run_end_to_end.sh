@@ -54,17 +54,13 @@ if [ "$SKIP_BENCH" = false ]; then
     cargo bench --package mls-srtp-core --bench pep_throughput
     ok "PEP throughput benchmark complete."
 
-    info "Running MLS rekey benchmark (up to 1000 members)..."
+    info "Running MLS rekey benchmark (2–5000 members)..."
     cargo bench --package mls-srtp-core --bench rekey
-    ok "MLS rekey benchmark complete (up to 1000)."
+    ok "MLS rekey benchmark complete."
 
     info "Running key derivation benchmark..."
     cargo bench --package mls-srtp-core --bench key_derivation
     ok "Key derivation benchmark complete."
-
-    info "Running MLS rekey benchmark (5000 members only)..."
-    REKEY_GROUP_SIZES=5000 cargo bench --package mls-srtp-core --bench rekey
-    ok "MLS rekey benchmark complete (5000)."
 
 fi
 
