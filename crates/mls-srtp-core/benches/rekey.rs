@@ -56,16 +56,23 @@ fn group_sizes() -> Vec<usize> {
 // Group setup
 // ---------------------------------------------------------------------------
 
-/// Creates an MLS group with `n` members where every member self-updates
-/// after joining, producing a fully populated ratchet tree (no blank nodes).
+/// Creates an MLS group with `n` members and returns only the 2 members
+/// needed for benchmarking (the creator and one receiver).
 ///
-/// This follows the `CommitAfterJoin` variant from OpenMLS's own
-/// `large-groups.rs` benchmark example. Without the self-updates, the tree
-/// would contain blank internal nodes whose resolution depends on topology,
-/// making commit cost vary with which member commits rather than just
-/// group size.
+/// Each new member self-updates after joining, producing a fully populated
+/// ratchet tree (no blank nodes). This follows the `CommitAfterJoin` variant
+/// from OpenMLS's own `large-groups.rs` benchmark example. Without the
+/// self-updates, the tree would contain blank internal nodes whose resolution
+/// depends on topology, making commit cost vary with which member commits
+/// rather than just group size.
 ///
-/// Returns each member's (MlsGroup, OpenMlsRustCrypto, SignatureKeyPair).
+/// Optimization: Only the creator (member 0) and member 1 maintain
+/// up-to-date group state. Other members are added to grow the tree to size
+/// `n` but their state is discarded after they self-update. This avoids the
+/// O(n²) setup cost of having all members process every commit. 
+/// The benchmarks only use members 0 and 1 anyway (sender and receiver roles).
+///
+/// Returns exactly 2 entries: [(member 0 state), (member 1 state)].
 fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)> {
     assert!(n >= 2, "need at least 2 members for a meaningful group");
 
@@ -84,10 +91,11 @@ fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>
     )
     .expect("failed to create MLS group");
 
+    // We only keep state for member 0 (creator) and member 1 (first joiner).
+    // All other members are added to grow the tree but their state is dropped.
     let mut members: Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)> =
         vec![(creator_group, creator.provider, creator.signer)];
 
-    // for each new member, the creator adds them, then the new member self-updates    
     for i in 1..n {
         let new_member = MlsMember::new(&format!("member-{i}:member"));
         let kp = new_member.generate_key_package();
@@ -120,10 +128,9 @@ fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>
         .into_group(&new_member.provider)
         .expect("into_group failed");
 
-        // all existing members (except creator who already merged) process
-        // the add commit
-        for entry in members[1..].iter_mut() {
-            let (ref mut group, ref provider, _) = *entry;
+        // member 1 (if it exists) processes the add commit to stay in sync
+        if members.len() > 1 {
+            let (ref mut group, ref provider, _) = members[1];
             process_commit(group, provider, add_commit.clone());
         }
 
@@ -131,13 +138,20 @@ fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>
         let update_commit =
             create_rekey_commit(&mut new_group, &new_member.provider, &new_member.signer);
 
-        // all existing members process the self-update commit
+        // only members 0 and 1 process the self-update commit
         for entry in members.iter_mut() {
             let (ref mut group, ref provider, _) = *entry;
             process_commit(group, provider, update_commit.clone());
         }
 
-        members.push((new_group, new_member.provider, new_member.signer));
+        // Keeping member 1's state and discarding everyone else's after they join.
+        // Member 1 is the second member added (i == 1).
+        if i == 1 {
+            members.push((new_group, new_member.provider, new_member.signer));
+        }
+        // For i > 1: new_group is dropped here, as we only needed it to
+        // self-update and fill its leaf in the tree. Members 0 and 1
+        // already processed the update, so their trees are up to date.
     }
 
     members
@@ -154,7 +168,8 @@ fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>
 fn bench_mls_rekey(c: &mut Criterion) {
 
     // pre-creating groups of each size (expensive, done once)
-    let groups: Vec<(usize, Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>)> = GROUP_SIZES
+    let sizes = group_sizes();
+    let groups: Vec<(usize, Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>)> = sizes
         .iter()
         .map(|&n| {
             eprintln!("[setup] Creating {n}-member group...");
