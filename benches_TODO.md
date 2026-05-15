@@ -35,6 +35,8 @@
   time) for different group sizes.
   ---> `results/mls_rekey/results.md`
 
+- [ ] **Rekey cost breakdown:** break down the rekey pipeline into its individual components inside the create/process commit and inside the SRTP key export, across group sizes. Maybe a stacked bar chart would be a nice representation here.
+
 - [ ] **Memory usage** for different group sizes.
 
 ## Real-world/hardware
