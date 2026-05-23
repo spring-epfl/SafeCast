@@ -67,3 +67,8 @@ harness = false
 name = "rekey"
 path = "benches/rekey.rs"
 harness = false
+
+[[bench]]
+name = "rekey_breakdown"
+path = "benches/rekey_breakdown.rs"
+harness = false
