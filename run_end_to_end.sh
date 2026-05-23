@@ -9,7 +9,8 @@
 #   1. srtp_throughput_criterion  -> Figures 1-2, Tables 1-2
 #   2. pep_throughput             -> Figure 3 (SRTP vs PEP comparison)
 #   3. rekey                      -> Figure 4
-#   4. key_derivation             -> Table 3
+#   4. rekey_breakdown            -> Figure 5
+#   5. key_derivation             -> Table 3
 #
 # Usage:
 #   ./run_end_to_end.sh              # run everything
@@ -54,9 +55,13 @@ if [ "$SKIP_BENCH" = false ]; then
     cargo bench --package mls-srtp-core --bench pep_throughput
     ok "PEP throughput benchmark complete."
 
-    info "Running MLS rekey benchmark (2–5000 members)..."
+    info "Running MLS rekey benchmark ..."
     cargo bench --package mls-srtp-core --bench rekey
     ok "MLS rekey benchmark complete."
+
+    info "Running MLS rekey breakdown benchmark..."
+    cargo bench --package mls-srtp-core --bench rekey_breakdown
+    ok "MLS rekey breakdown benchmark complete."
 
     info "Running key derivation benchmark..."
     cargo bench --package mls-srtp-core --bench key_derivation
@@ -79,6 +84,15 @@ rm -rf "$CRITERION_DST/rekey"
 mkdir -p "$CRITERION_DST/rekey"
 cp -r "$CRITERION_SRC/sender_rekey_pipeline"   "$CRITERION_DST/rekey/"
 cp -r "$CRITERION_SRC/receiver_rekey_pipeline"  "$CRITERION_DST/rekey/"
+
+# MLS rekey breakdown: component measurements for stacked bar chart
+mkdir -p "$CRITERION_DST/rekey_breakdown"
+for component in breakdown_sender_propose breakdown_sender_build breakdown_sender_build_and_stage breakdown_sender_merge_pending \
+                 breakdown_receiver_unprotect breakdown_receiver_verify_stage breakdown_receiver_merge_staged; do
+    if [ -d "$CRITERION_SRC/$component" ]; then
+        cp -r "$CRITERION_SRC/$component" "$CRITERION_DST/rekey_breakdown/"
+    fi
+done
 
 # Key derivation: mls_key_export, srtp_kdf, full_key_derivation
 rm -rf "$CRITERION_DST/key_derivation"
