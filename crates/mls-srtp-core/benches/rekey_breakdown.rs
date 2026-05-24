@@ -37,7 +37,7 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;
 
-const GROUP_SIZES: &[usize] = &[2, 10, 50, 200, 500];
+const GROUP_SIZES: &[usize] = &[2, 10, 50, 200, 500, 1000, 5000];
 
 // ---------------------------------------------------------------------------
 // Group setup
