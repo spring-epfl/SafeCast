@@ -4,10 +4,11 @@
 //! Run: cargo run --release --bin memory_usage
 //!
 //! We replace Rust's default memory allocator with a wrapper that counts
-//! how many bytes are currently allocated. We measure three components:
+//! how many bytes are currently allocated. We measure four components:
 //!   1. The MlsGroup struct (ratchet tree, epoch secrets, message secrets, etc.)
 //!   2. The SignatureKeyPair (the member's signing key)
 //!   3. HPKE encryption key pairs (private keys for the member's path)
+//!   4. Exported SRTP key material (master key + master salt, 28 bytes)
 //!
 //! For each component, we record the byte count before and after dropping it
 //! (the difference is the memory that component was using).
@@ -84,7 +85,9 @@ fn current_allocated() -> usize {
 // Each new member self-updates after joining to populate its leaf with
 // fresh HPKE key pairs (no blank nodes in the tree).
 
-use mls_srtp_core::mls::{create_rekey_commit, process_commit, MlsMember, CIPHERSUITE};
+use mls_srtp_core::mls::{
+    create_rekey_commit, export_srtp_keys, process_commit, MlsMember, CIPHERSUITE,
+};
 use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
@@ -180,7 +183,8 @@ fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>
 //   2. measure the MlsGroup by dropping it and recording the freed bytes
 //   3. measure the SignatureKeyPair the same way
 //   4. measure the HPKE encryption key pairs
-//   5. sum the three to get the total per-member memory
+//   5. measure the exported SRTP key material
+//   6. sum all four to get the total per-member memory
 
 fn main() {
     let mut results: Vec<serde_json::Value> = Vec::new();
@@ -193,8 +197,13 @@ fn main() {
         // remove(0) takes the creator's tuple out of the vector.
         let (group, provider, signer) = members.remove(0);
 
+        // exporting SRTP keys before dropping the group, since export_srtp_keys
+        // needs a reference to the MlsGroup (to access the exporter_secret)
+        let (srtp_key_material, _master_key, _master_salt) =
+            export_srtp_keys(&group, provider.crypto(), 0x1234);
+
         // --- 1. MlsGroup: ratchet tree, epoch secrets, message secrets, etc. ---
-        
+
         let before = current_allocated();
 
         // dropping
@@ -231,13 +240,20 @@ fn main() {
         }
         let enc_keys_bytes = before.saturating_sub(current_allocated());
 
-        // summing all three components
-        let total_bytes = group_bytes + signer_bytes + enc_keys_bytes;
+        // --- 4. Exported SRTP key material (master key || master salt) ---
+        // 28 bytes for AES-128-GCM: 16-byte key + 12-byte salt.
+        // Constant regardless of group size.
+        let before = current_allocated();
+        drop(srtp_key_material);
+        let srtp_keys_bytes = before.saturating_sub(current_allocated());
+
+        // summing all four components
+        let total_bytes = group_bytes + signer_bytes + enc_keys_bytes + srtp_keys_bytes;
         let total_kb = total_bytes as f64 / 1024.0;
 
         eprintln!("  n={n}: {total_bytes} bytes ({total_kb:.1} KB)");
         eprintln!(
-            "    group: {group_bytes}, signer: {signer_bytes}, enc keys: {enc_keys_bytes}"
+            "    group: {group_bytes}, signer: {signer_bytes}, enc keys: {enc_keys_bytes}, srtp keys: {srtp_keys_bytes}"
         );
 
         // saving result in JSON format (using a Map to preserve key order:
