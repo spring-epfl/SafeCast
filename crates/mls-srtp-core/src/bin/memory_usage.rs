@@ -4,9 +4,14 @@
 //! Run: cargo run --release --bin memory_usage
 //!
 //! We replace Rust's default memory allocator with a wrapper that counts
-//! how many bytes are currently allocated. To measure the memory of an
-//! MlsGroup, we record the byte count before and after dropping it
-//! (the difference is the memory that group was using).
+//! how many bytes are currently allocated. We measure three components:
+//!   1. The MlsGroup struct (ratchet tree, epoch secrets, message secrets, etc.)
+//!   2. The SignatureKeyPair (the member's signing key)
+//!   3. HPKE encryption key pairs (private keys for the member's path)
+//!
+//! For each component, we record the byte count before and after dropping it
+//! (the difference is the memory that component was using).
+//!
 //!
 //! Results are written to benches/results/memory_usage.json.
 
@@ -77,6 +82,7 @@ use mls_srtp_core::mls::{create_rekey_commit, process_commit, MlsMember, CIPHERS
 use openmls::prelude::*;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
+use openmls_traits::OpenMlsProvider;
 
 const GROUP_SIZES: &[usize] = &[2, 10, 50, 200, 500, 1000, 5000];
 
@@ -165,12 +171,10 @@ fn setup_group(n: usize) -> Vec<(MlsGroup, OpenMlsRustCrypto, SignatureKeyPair)>
 //
 // For each group size, we:
 //   1. build the full group
-//   2. read how many bytes are currently on the heap
-//   3. drop the creator's MlsGroup, freeing its memory
-//   4. read the heap counter again
-//   5. calculate the difference = how much memory that group was using
-//
-// We only measure the MlsGroup itself.
+//   2. measure the MlsGroup by dropping it and recording the freed bytes
+//   3. measure the SignatureKeyPair the same way
+//   4. measure the HPKE encryption key pairs
+//   5. sum the three to get the total per-member memory
 
 fn main() {
     let mut results: Vec<serde_json::Value> = Vec::new();
@@ -180,34 +184,61 @@ fn main() {
         let mut members = setup_group(n);
 
         // setup_group returns a list of (MlsGroup, provider, signer) tuples.
-        // We take the creator's tuple and unpack it so we can drop only the 
-        // MlsGroup and measure its memory. 
-        // remove(0) takes the tuple out of the members vector and returns it. 
-        let (group, _provider, _signer) = members.remove(0);
+        // remove(0) takes the creator's tuple out of the vector.
+        let (group, provider, signer) = members.remove(0);
 
-        // snapshot before dropping
+        // --- 1. MlsGroup: ratchet tree, epoch secrets, message secrets, etc. ---
+        
         let before = current_allocated();
 
         // dropping
         drop(group);
 
-        // snapshot after dropping
-        let after = current_allocated();
+        // the difference in allocated bytes before and after dropping the MlsGroup
+        let group_bytes = before.saturating_sub(current_allocated());
 
-        // the difference is the memory the group was using
-        let group_bytes = before.saturating_sub(after);
+        // --- 2. SignatureKeyPair: the member's signing key ---
+        
+        let before = current_allocated();
+        
+        // dropping
+        drop(signer);
 
-        // converting to KB
-        let group_kb = group_bytes as f64 / 1024.0;
+        // the difference in allocated bytes before and after dropping the signer
+        let signer_bytes = before.saturating_sub(current_allocated());
 
-        // printing
-        eprintln!("  n={n}: {group_bytes} bytes ({group_kb:.1} KB)");
+        // --- 3. HPKE encryption key pairs stored in the provider ---
+
+        // Unlike the MlsGroup and SignatureKeyPair, the HPKE private keys
+        // are not standalone structs we can drop. They live as serialized
+        // entries inside the provider's MemoryStorage HashMap, keyed by the
+        // prefixes "EncryptionKeyPair" and "EpochKeyPairs". We remove those
+        // entries and measure the freed bytes.
+        let before = current_allocated();
+        {
+            // removing all entries whose keys start with "EncryptionKeyPair" or "EpochKeyPairs"
+            let mut values = provider.storage().values.write().unwrap();
+            values.retain(|key, _| {
+                !key.starts_with(b"EncryptionKeyPair")
+                    && !key.starts_with(b"EpochKeyPairs")
+            });
+        }
+        let enc_keys_bytes = before.saturating_sub(current_allocated());
+
+        // summing all three components
+        let total_bytes = group_bytes + signer_bytes + enc_keys_bytes;
+        let total_kb = total_bytes as f64 / 1024.0;
+
+        eprintln!("  n={n}: {total_bytes} bytes ({total_kb:.1} KB)");
+        eprintln!(
+            "    group: {group_bytes}, signer: {signer_bytes}, enc keys: {enc_keys_bytes}"
+        );
 
         // saving result in JSON format (using a Map to preserve key order:
         // group_size first, then bytes)
         let mut entry = serde_json::Map::new();
         entry.insert("group_size".into(), serde_json::json!(n));
-        entry.insert("bytes".into(), serde_json::json!(group_bytes));
+        entry.insert("bytes".into(), serde_json::json!(total_bytes));
         results.push(serde_json::Value::Object(entry));
     }
 
