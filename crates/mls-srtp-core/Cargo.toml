@@ -76,3 +76,8 @@ harness = false
 name = "rekey_breakdown"
 path = "benches/rekey_breakdown.rs"
 harness = false
+
+[[bench]]
+name = "srtp_rtcp_interleaving"
+path = "benches/srtp_rtcp_interleaving.rs"
+harness = false
