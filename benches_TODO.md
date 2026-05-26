@@ -111,7 +111,7 @@
 
   - NULL_HMAC_SHA1_80 (RFC 3711 §5): same as above but without encryption (RFC 3711 §5.1).
 
-- [ ] **Sender-side inbound SRTCP state memory:** the `srtp` crate supports SRTCP via
+- [ ] **Sender-side inbound SRTCP state memory.** the `srtp` crate supports SRTCP via
   `session.protect_rtcp()` & `session.unprotect_rtcp()`. RTCP packets
   are typically small (tens of bytes) and
   sent infrequently (~every 5 seconds per RFC 3550 §6.2), so the
@@ -124,3 +124,9 @@
   (cryptographic contexts) that has to be maintained for each receiver,
   sending back RTCP Receiver Reports. At minimum, a replay window
   might need to be maintained for each RTCP source."
+
+- [ ] **Reduce code duplication across benchmarks.** Several benchmark files
+  duplicate the same MLS group setup, RTP header construction, timing functions, etc.
+  We should extract shared helpers (e.g., `setup_mls_group()`,
+  `make_rtp_buffer()`, constants like `GCM_TAG_LEN` and for the MTU sizes) into a common
+  `benches/bench_utils.rs` module.
