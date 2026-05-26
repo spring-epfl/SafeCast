@@ -51,6 +51,32 @@
 
 ## Extras
 
+- [ ] **Cycles-per-byte benchmark for SRTP vs. PEP.** In addition to reporting throughput in Gbps, 
+  we could report cycles per byte (cpb) for SRTP and PEP. This metric counts
+  how many CPU clock cycles are needed to process one byte of data,
+  and is the standard way cryptographic primitives are compared (e.g., on the
+  [eBACS benchmarking site](https://bench.cr.yp.to/)). Unlike throughput in
+  Gbps, cpb is much less directly tied to clock speed: the same algorithm on the same
+  microarchitecture (e.g., Apple M2 or AMD Zen 4) 
+  gives the same cpb whether the chip is clocked at 700 MHz or 3.5 GHz.
+  For example, if an encryption algorithm takes 200 ns when
+  the chip runs at 3.49 GHz, that is 698 cycles. If the chip throttles to 3.2 GHz,
+  it might take 218 ns. While this is a different wall-clock time, it is
+  still 698 cycles.
+
+  The difficulty is that measuring cpb is not straightforward on our M2 Mac.
+  The `criterion-cycles-per-byte` crate relies on low-level CPU cycle counters
+  such as `rdtsc`, which are x86-specific. On aarch64-apple-darwin, the crate
+  does not compile at all
+  ([GitHub issue](https://github.com/criterion-rs/criterion-cycles-per-byte/issues/6)).
+  Apple Silicon does have hardware cycle counters, but macOS does not expose them
+  in the same simple way.
+
+  The goal is to implement a small custom Criterion measurement backend that reads cycle
+  counts via Apple's `thread_selfcounts` API. A similar approach was proposed for
+  [Google Benchmark](https://github.com/google/benchmark/pull/1404), but does not
+  seem to have been integrated into any Rust benchmarking crate.
+
 - [ ] **SRTP cipher comparison.** Benchmarking protect/unprotect across the three
   SRTP cipher families to quantify the cost of authenticated encryption
   vs. authentication-only vs. encrypt-then-MAC:
