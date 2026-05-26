@@ -1,22 +1,30 @@
 [
   {
     "group_size": 2,
-    "bytes": 2958
+    "bytes": 3789
   },
   {
     "group_size": 10,
-    "bytes": 13094
+    "bytes": 14834
   },
   {
     "group_size": 50,
-    "bytes": 49094
+    "bytes": 51408
   },
   {
     "group_size": 200,
-    "bytes": 188970
+    "bytes": 191852
   },
   {
     "group_size": 500,
-    "bytes": 401238
+    "bytes": 404419
+  },
+  {
+    "group_size": 1000,
+    "bytes": 803545
+  },
+  {
+    "group_size": 5000,
+    "bytes": 5621139
   }
 ]
