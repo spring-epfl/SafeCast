@@ -77,7 +77,7 @@
   [Google Benchmark](https://github.com/google/benchmark/pull/1404), but does not
   seem to have been integrated into any Rust benchmarking crate.
 
-- [ ] **RTCP encryption overhead.** In a real session, each
+- [x] **RTCP encryption overhead.** In a real session, each
   participant encrypts media packets (SRTP `protect()`) and periodically
   encrypts control packets (SRTCP `protect_rtcp()`). RTCP is sent
   infrequently (~every 5 s per RFC 3550 §6.2) and packets are small,
