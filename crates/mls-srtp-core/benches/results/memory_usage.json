@@ -1,0 +1,22 @@
+[
+  {
+    "bytes": 2958,
+    "group_size": 2
+  },
+  {
+    "bytes": 13094,
+    "group_size": 10
+  },
+  {
+    "bytes": 49094,
+    "group_size": 50
+  },
+  {
+    "bytes": 188970,
+    "group_size": 200
+  },
+  {
+    "bytes": 401238,
+    "group_size": 500
+  }
+]
