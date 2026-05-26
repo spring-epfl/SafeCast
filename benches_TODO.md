@@ -77,6 +77,26 @@
   [Google Benchmark](https://github.com/google/benchmark/pull/1404), but does not
   seem to have been integrated into any Rust benchmarking crate.
 
+- [ ] **RTCP encryption overhead.** In a real session, each
+  participant encrypts media packets (SRTP `protect()`) and periodically
+  encrypts control packets (SRTCP `protect_rtcp()`). RTCP is sent
+  infrequently (~every 5 s per RFC 3550 §6.2) and packets are small,
+  so the per-packet cost is negligible compared to media encryption. 
+  The real question is whether interleaving occasional SRTCP
+  operations with the RTP stream causes measurable interference.
+  This could be quantified with a benchmark that runs an
+  SRTP `protect()` loop and injects an SRTCP `protect_rtcp()` call every
+  N packets\* and compares the sustained RTP throughput with and without the RTCP
+  interleaving. The expected result is no measurable difference,
+  as the RTCP interval is long. 
+  
+  \* for N, taking for example ST 2110-10 uncompressed 1080p60
+  (4:2:2 10-bit, 2.58 Gbps) => at the standard MTU payload size (1424 B)
+  this is ~226,500 pps, so N ≈ 1,130,000 per 5 s RTCP interval.
+
+  For the RTCP packet size we can use 100 bytes. RFC 3550 does not define a fixed RTCP size, but real-world captures show packets in this range: a [ShareTechnote](https://www.sharetechnote.com/html/IMS_SIP_RTP_RTCP.html) example shows a 72-byte RTCP packet, while the [Wireshark](https://wiki.wireshark.org/RTCP) RTCP sample contains a 100-byte packet.
+
+
 - [ ] **SRTP cipher comparison.** Benchmarking protect/unprotect across the three
   SRTP cipher families to quantify the cost of authenticated encryption
   vs. authentication-only vs. encrypt-then-MAC:
