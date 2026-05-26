@@ -203,11 +203,12 @@ fn main() {
         // printing
         eprintln!("  n={n}: {group_bytes} bytes ({group_kb:.1} KB)");
 
-        // saving result in JSON format
-        results.push(serde_json::json!({
-            "group_size": n,
-            "bytes": group_bytes,
-        }));
+        // saving result in JSON format (using a Map to preserve key order:
+        // group_size first, then bytes)
+        let mut entry = serde_json::Map::new();
+        entry.insert("group_size".into(), serde_json::json!(n));
+        entry.insert("bytes".into(), serde_json::json!(group_bytes));
+        results.push(serde_json::Value::Object(entry));
     }
 
     // writing final results to JSON file
