@@ -12,6 +12,12 @@
 //! For each component, we record the byte count before and after dropping it
 //! (the difference is the memory that component was using).
 //!
+//! NOTE: whenever MlsGroup state changes, OpenMLS
+//! writes a serialized copy to the StorageProvider (a pluggable persistence
+//! backend). The MlsGroup struct still holds all working state in its own
+//! fields regardless of which backend is used. With MemoryStorage (used here),
+//! these extra copies live in a HashMap in RAM. Since in a production deployment
+//! the backend would be an on-disk database, we do NOT count this duplication.
 //!
 //! Results are written to benches/results/memory_usage.json.
 
