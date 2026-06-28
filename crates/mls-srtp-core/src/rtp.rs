@@ -110,3 +110,42 @@ pub fn frame_generation(ts: u32, epoch_start_ts: u32, frame_period: u32) -> u64 
     // dividing elapsed ticks by ticks-per-frame to get the frame number
     (elapsed / frame_period) as u64
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Each frame's packets (sharing one timestamp) map to one generation, and
+    /// the generation increments by one per frame period.
+    #[test]
+    fn frame_generation_increments_per_frame() {
+
+        // epoch's first-frame timestamp: the anchor/zero point
+        let start = 1000u32;
+        // ticks per frame (90 kHz clock/60 fps)
+        let period = 1500u32;
+        // the epoch's first frame is generation 0
+        assert_eq!(frame_generation(start, start, period), 0);
+        // a later packet within the same frame's timestamp stays in generation 0
+        // (recall that all packets of a frame share the same timestamp)
+        assert_eq!(frame_generation(start, start, period), 0);
+        // the next frame's timestamp is one generation on
+        assert_eq!(frame_generation(start + period, start, period), 1);
+        // a partway-into-the-frame timestamp still rounds down to that frame
+        assert_eq!(frame_generation(start + period + 700, start, period), 1);
+        // 5 frames later, the generation is 5
+        assert_eq!(frame_generation(start + 5 * period, start, period), 5);
+    }
+
+    /// A timestamp that has wrapped past 2^32 still yields the right generation,
+    /// because the distance from the epoch start is computed modulo 2^32.
+    #[test]
+    fn frame_generation_survives_timestamp_wrap() {
+        let period = 1500u32;
+        // starting two frame periods before the 32-bit wrap
+        let start = u32::MAX - 2 * period + 1;
+        // three frames later the timestamp has wrapped past zero
+        let ts = start.wrapping_add(3 * period);
+        assert_eq!(frame_generation(ts, start, period), 3);
+    }
+}
