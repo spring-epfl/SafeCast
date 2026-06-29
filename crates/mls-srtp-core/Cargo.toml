@@ -43,6 +43,11 @@ path = "benches/key_derivation.rs"
 harness = false
 
 [[bench]]
+name = "ratchet_step"
+path = "benches/ratchet_step.rs"
+harness = false
+
+[[bench]]
 name = "srtp_throughput_manual"
 path = "benches/srtp_throughput/srtp_throughput_manual.rs"
 harness = false
