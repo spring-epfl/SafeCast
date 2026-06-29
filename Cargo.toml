@@ -17,8 +17,10 @@ openmls_traits = { path = "openmls/traits" }
 # OpenMLS Delivery Service library (types for DS interaction)
 ds-lib = { path = "openmls/delivery-service/ds-lib" }
 
-# SRTP (Rust bindings for libsrtp)
-srtp = "0.7"
+# SRTP (Rust bindings for libsrtp): our fork of the high-level `srtp` crate,
+# which adds Session::inplace_rekey (wrapping the libsrtp fork's
+# srtp_inplace_rekey).
+srtp = { git = "https://github.com/ArmanKolozyan/srtp.git" }
 
 # HTTP server
 actix-web = "4"
@@ -45,4 +47,6 @@ clap = { version = "4", features = ["derive"] }
 # ~120 ns overhead on every protect() call: see
 # crates/mls-srtp-core/benches/protect_unprotect_asymmetry/)
 [patch.crates-io]
+# Our fork also adds srtp_inplace_rekey to libsrtp (via the libsrtp submodule
+# fork) for the fine-grained frame/packet rekey functionality.
 srtp2-sys = { git = "https://github.com/ArmanKolozyan/srtp2-sys.git" }
