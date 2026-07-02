@@ -45,7 +45,6 @@ pub async fn create_multicast_sender() -> std::io::Result<UdpSocket> {
 }
 
 /// Creates a UDP socket for receiving from the multicast group.
-
 pub fn create_multicast_receiver() -> std::io::Result<UdpSocket> {
     
     // using socket2 for SO_REUSEADDR and IGMP membership control
