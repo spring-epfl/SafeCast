@@ -5,6 +5,7 @@
 //!   - [`ratchet`]: MLS-seeded per-stream key ratchet for fine-grained forward secrecy
 //!   - [`granularity`]: SRTP streams that rotate their ratchet key never (epoch-only),
 //!     once per frame, or every packet
+//!   - [`index_recovery`]: RFC 3711 sequence-number unwrapping
 //!   - [`receiver`]: real-network receiver: keeps the last K generation keys so
 //!     late/reordered packets still decrypt 
 //!   - [`rtp`]: minimal RTP packet construction and parsing (RFC 3550)
@@ -15,6 +16,7 @@
 pub mod mls;
 pub mod ratchet;
 pub mod granularity;
+pub mod index_recovery;
 pub mod receiver;
 pub mod rtp;
 pub mod srtp_session;
