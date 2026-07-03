@@ -54,7 +54,7 @@ impl IndexRecovery {
             // meaning the counter wrapped recently
             if seq_i - s_l > 32_768 {
                 // incoming seq is more than half the range ABOVE the newest:
-                // "far ahead" is implausible, so it is really a straggler
+                // "far ahead" is implausible, so it is really a late packet
                 // from just BEFORE the recent wrap. The RFC computes
                 // (roc-1) mod 2^32. At roc 0 no previous rollover exists in
                 // this epoch, so the result stays at rollover 0.
@@ -88,14 +88,56 @@ impl IndexRecovery {
         }
     }
 }
-        // reference is 65_530, i.e. seq 65_530 in rollover 0, near the wrap
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// With no packet seen yet, there is no "highest index" to
+    /// compare against, so we just return
+    /// the raw sequence number (i.e. rollover count 0).
+    #[test]
+    fn index_recovery_cold_start() {
+        let rec = IndexRecovery::default();
+        // nothing recorded yet -> the index is the seq value itself
+        assert_eq!(rec.recover(0), 0);
+        assert_eq!(rec.recover(500), 500);
+    }
+
+    /// A packet stays in the current rollover when its seq number is near the
+    /// last-seen one: when the two 16-bit numbers differ by less than half
+    /// the range (32_768). Note "differ" means plain subtraction of the two seq
+    /// values, which is NOT the same as how many packets apart they are. Right
+    /// at a wrap, one packet reads 65_535 and the next reads 0: physically just
+    /// 1 packet apart, but 65_535 - 0 = 65_535 apart in raw value (the counter
+    /// jumped from 65_535 down to 0). That big raw-value gap is what makes the
+    /// code infer a new rollover. Here every seq is within 10 of the 40_000
+    /// reference, so the gap is tiny -> same rollover, index == seq.
+    #[test]
+    fn index_recovery_within_rollover() {
+        let mut rec = IndexRecovery::default();
+        // last packet seen was number 40_000
+        rec.update(40_000);
+        // 40_010 is 10 ahead of 40_000: tiny gap, no wrap, so index = 40_010
+        assert_eq!(rec.recover(40_010), 40_010);
+        // 39_990 is 10 behind (a reordered packet): still no wrap, index = 39_990
+        assert_eq!(rec.recover(39_990), 39_990);
+    }
+
+    /// Both directions across a 65_536-packet wrap resolve to the right
+    /// rollover: forward past the wrap, a late packet from just before the wrap, 
+    /// and a small late packet once we are already in rollover 1.
+    #[test]
+    fn index_recovery_across_wrap() {
+        let mut rec = IndexRecovery::default();
+        // reference is 65_530 in rollover 0, near the wrap
         rec.update(65_530);
         // seq 3 is far below the reference: reading it in rollover 0 (index 3)
         // would be a huge jump back, so it is the start of rollover 1
         assert_eq!(rec.recover(3), 65_536 + 3);
-        // now move the reference just past the wrap, into rollover 1 (seq 2)
+        // now we move the reference just past the wrap, into rollover 1 (seq 2)
         rec.update(65_536 + 2);
-        // seq 65_534 arriving now is a straggler from BEFORE the wrap: reading
+        // seq 65_534 arriving now is a late packet from BEFORE the wrap: reading
         // it in rollover 1 would be a huge jump forward, so it stays rollover 0
         assert_eq!(rec.recover(65_534), 65_534);
         // seq 50 is close to the rollover-1 reference: it stays in rollover 1
