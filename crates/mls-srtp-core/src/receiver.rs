@@ -354,7 +354,7 @@ impl ReceiverKeyManager {
         // packets share a generation), but reordering can force it back and
         // forth: e.g. a late packet from frame N arriving after frame N+1
         // makes us install N's key, then N+1's again for the next packet - a
-        // "flip-flop" of two extra installs per straggler.
+        // "flip-flop" of two extra installs per late packet.
         if self.installed != Some(g) {
             let (key, salt) = split_key_salt(&key_salt);
             self.session

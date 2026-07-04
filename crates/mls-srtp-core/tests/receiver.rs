@@ -217,3 +217,130 @@ fn shuffle_within_window_decrypts_everything() {
     assert_eq!(s.max_catchup, chunk as u64);
 }
 
+/// Test 3: A late packet older than the key window (the receiver keeps only
+/// the K most recent generation keys, older ones are deleted for forward
+/// secrecy) is dropped as keying-loss without touching the ratchet.
+#[test]
+fn late_packet_behind_window_is_clean_keying_loss() {
+    
+    // 24 packets
+    let plain = create_packets(4, 6, 64); // generations 0..=23
+    let cipher = encrypt_all(Granularity::Packet, &plain);
+
+    // key window of K=8: only the 8 most recent generation keys are kept
+    let mut rx = receiver(Granularity::Packet, 8, 1_000);
+
+    // delivering packets 0..=22 in order, but hold backing packet 2 (it will be
+    // delivered late below, after its key has fallen out of the window)
+    for (i, ct) in cipher.iter().enumerate().take(23) {
+        if i == 2 {
+            continue;
+        }
+        let mut buf = ct.clone();
+        rx.unprotect(&mut buf).expect("in-order packet failed");
+    }
+
+    // newest generation seen (the "frontier") is 22, so with K=8 the kept
+    // keys are generations 15..=22; generation 2's key is long deleted
+    assert_eq!(rx.frontier(), Some(22));
+
+    // now delivering the held-back packet 2: its key was discarded when the
+    // window moved past it, so the receiver cannot decrypt it
+    let mut late = cipher[2].clone();
+    assert_eq!(rx.unprotect(&mut late), Err(RecvDrop::BehindWindow));
+    // the drop is counted
+    assert_eq!(rx.stats().drops_behind, 1);
+    // ...and the receiver's frontier must not move because of a dropped packet
+    assert_eq!(rx.frontier(), Some(22), "drop must not move the frontier");
+
+    // finally, the next fresh packet (generation 23) still decrypts: the
+    // dropped packet left no damage behind
+    let mut next = cipher[23].clone();
+    rx.unprotect(&mut next).expect("stream must continue after the drop");
+}
+
+/// Test 4: How the receiver handles packets that jump AHEAD of what it has
+/// seen (a gap: the packets in between were lost or are still in flight).
+/// Three scenario tests, in order:
+///
+///   (a) an honest jump within the seek cap: the receiver ratchets forward
+///       ("catches up") exactly the gap's worth of steps, no more;
+///   (b) a jump beyond the seek cap: dropped outright
+///   (c) a FORGED packet claiming a future generation within the cap: the
+///       receiver does the catch-up work on a clone of its ratchet, the
+///       packet then fails GCM authentication, and the clone is thrown away,
+///       so the receiver's real state is untouched
+#[test]
+fn gap_catchup_seek_cap_and_d8() {
+    // 170 packets in one frame (frames are irrelevant at packet-level keying,
+    // we just need generations 0..=169 to play with)
+    let plain: Vec<Vec<u8>> = create_packets(1, 170, 64);
+    let cipher = encrypt_all(Granularity::Packet, &plain);
+
+    // seek cap 100: the receiver refuses to ratchet more than 100 steps
+    // forward for any single packet
+    let mut rx = receiver(Granularity::Packet, 16, 100);
+
+    // warm-up: delivering packets 0..=5 in order, receiver's frontier (newest
+    // generation seen) lands at 5
+    for ct in cipher.iter().take(6) {
+        let mut buf = ct.clone();
+        rx.unprotect(&mut buf).expect("in-order packet failed");
+    }
+
+    // (a) honest in-cap jump: packet 50 arrives while the frontier is 5, as
+    // if packets 6..=49 were lost. Jump of 45 <= cap 100, so it must decrypt
+    let mut jump = cipher[50].clone();
+    rx.unprotect(&mut jump).expect("in-cap catch-up failed");
+    // the frontier moved to 50, and the catch-up took exactly 45 ratchet
+    // steps (generations 6..=50), not one more
+    assert_eq!(rx.frontier(), Some(50));
+    assert_eq!(rx.stats().max_catchup, 45);
+
+    // (b) beyond-cap jump: packet 165 is a jump of 115 > 100 from frontier 50
+    let mut too_far = cipher[165].clone();
+    assert_eq!(rx.unprotect(&mut too_far), Err(RecvDrop::SeekCapExceeded));
+    // counted in its own drop bucket, and the frontier did not move
+    assert_eq!(rx.stats().drops_seek_cap, 1);
+    assert_eq!(rx.frontier(), Some(50), "capped drop moved the frontier");
+
+    // (c) a forged packet claiming generation 70 (jump 20,
+    // inside the cap, so the receiver will do the catch-up work before
+    // discovering the forgery)
+    let steps_before = rx.stats().catchup_steps;
+    // hand-built packet, never touched by the sender: its "ciphertext" is
+    // garbage, so GCM authentication will reject it
+    let mut forged = RtpPacket {
+        payload_type: 96,
+        sequence_number: 70, // claims generation 70
+        timestamp: START_TS,
+        ssrc: SSRC,
+        payload: vec![0xAB; 80], // garbage, will not authenticate
+    }
+    .to_bytes();
+    assert_eq!(rx.unprotect(&mut forged), Err(RecvDrop::AuthFail));
+
+    // 1 auth-fail drop 
+    assert_eq!(rx.stats().drops_auth, 1);
+    // the 20 catch-up steps were done on a clone and thrown away when auth
+    // failed, so the receiver's real position is untouched
+    assert_eq!(rx.frontier(), Some(50), "forged packet moved the frontier");
+    // the work itself is still counted (it did happen and cost time)
+    assert_eq!(
+        rx.stats().catchup_steps - steps_before,
+        20,
+        "the bounded derivation work is accounted"
+    );
+    // also counted in the wasted-work counter, so a measurement can
+    // tell useful catch-up work apart from work an attacker made us burn
+    assert_eq!(
+        rx.stats().catchup_steps_wasted, 20,
+        "discarded (rolled-back) catch-up work is accounted separately"
+    );
+
+    // after all three scenarios, the genuine generation-51 packet still
+    // decrypts: nothing above corrupted the receiver's state
+    let mut next = cipher[51].clone();
+    rx.unprotect(&mut next).expect("stream must continue after D8 events");
+}
+
