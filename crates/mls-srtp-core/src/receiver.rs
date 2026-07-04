@@ -26,34 +26,10 @@ use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;
 use srtp::{CryptoPolicy, Error, Session, StreamPolicy};
 
-use crate::ratchet::{split_key_salt, KeySalt, StreamRatchet};
-use crate::rtp::{frame_generation, RTP_HEADER_LEN};
+use crate::generation::{frame_generation, GenerationScheme};
 use crate::index_recovery::IndexRecovery;
-
-/// How a packet is mapped to its generation index `g`.
-#[derive(Debug, Clone, Copy)]
-pub enum GenerationScheme {
-    /// One key for the whole epoch: every packet is generation 0.
-    EpochOnly,
-    /// One key per video frame: `g` is derived from the RTP timestamp
-    /// (see [`frame_generation`]).
-    Frame {
-        /// Timestamp of the epoch's first frame (the zero point).
-        epoch_start_ts: u32,
-        /// RTP timestamp ticks per frame (clock rate/frame rate),
-        /// e.g. 90000/60 = 1500 ticks for 60 fps video.
-        /// (90000 is the standard RTP clock rate for video)
-        frame_period: u32,
-    },
-    /// One key per packet: `g = extended sequence index - base`, where the
-    /// extended index is recovered from the 16-bit RTP sequence number by
-    /// [`IndexRecovery`] and `base` is the extended index of the epoch's
-    /// first packet.
-    Packet {
-        /// Extended index of the epoch's first packet.
-        base: u64,
-    },
-}
+use crate::ratchet::{split_key_salt, KeySalt, StreamRatchet};
+use crate::rtp::RTP_HEADER_LEN;
 
 /// Why a packet was not delivered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

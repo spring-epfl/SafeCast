@@ -6,9 +6,10 @@
 //!   - with gaps: some packets never arrive (loss), leaving holes in the seq
 //!   - duplicated: the same packet arrives more than once (a replay)
 
+use mls_srtp_core::generation::GenerationScheme;
 use mls_srtp_core::granularity::{Granularity, RekeyingStream};
 use mls_srtp_core::ratchet::StreamRatchet;
-use mls_srtp_core::receiver::{GenerationScheme, RecvDrop, ReceiverKeyManager};
+use mls_srtp_core::receiver::{RecvDrop, ReceiverKeyManager};
 use mls_srtp_core::rtp::RtpPacket;
 
 // Unique identifier for the test stream.
@@ -72,34 +73,15 @@ fn encrypt_all(granularity: Granularity, plain: &[Vec<u8>]) -> Vec<Vec<u8>> {
 }
 
 /// Builds the receiver-side GenerationScheme that matches a sender
-/// granularity, filling in the reference points (epoch start timestamp, ticks
-/// per frame) from the test's constants.
-///
-/// Why the receiver needs its own type at all: Granularity is an enum
-/// (epoch-only/frame/packet) with no data in its variants. That is enough for
-/// the sender: at frame-level it remembers the previous packet's timestamp
-/// and rekeys when it changes, and at packet-level it rekeys on every packet. 
-/// The receiver, however sees packets possibly out of order, so "the previous packet" means nothing
-/// there. It instead computes each packet's generation number from the
-/// header, and for that the variants must carry data: Frame needs the epoch's
-/// starting timestamp and the ticks per frame, Packet needs the index the
-/// epoch started at (base). GenerationScheme is the enum whose variants
-/// carry those numbers.
+/// granularity, filling in the reference points from the test's constants:
+/// the epoch's starting timestamp and ticks per frame (used at frame-level)
+/// and base 0 (used at packet-level: the stream starts at seq 0). See
+/// `generation.rs` for why the receiver needs its own scheme type.
 fn receiver_scheme_for(granularity: Granularity) -> GenerationScheme {
-    match granularity {
-        // one generation for the whole epoch: every packet maps to 0
-        Granularity::EpochOnly => GenerationScheme::EpochOnly,
-        // generation = (timestamp - epoch_start_ts)/frame_period
-        Granularity::Frame => GenerationScheme::Frame {
-            epoch_start_ts: START_TS,
-            frame_period: PERIOD,
-        },
-        // generation = extended seq index - base (base 0: stream starts at seq 0)
-        Granularity::Packet => GenerationScheme::Packet { base: 0 },
-    }
+    GenerationScheme::for_granularity(granularity, START_TS, PERIOD, 0)
 }
 
-/// Builds the receiver under test. 
+/// Builds the receiver under test.
 /// `k` is how many recent generation keys it keeps
 /// `seek_cap` is the most ratchet steps it will do for one packet. 
 /// The final 0 picks libsrtp's default replay window (128).
@@ -414,7 +396,7 @@ fn identical_runs_produce_identical_stats() {
 // The key-window/catch-up/drop machinery is the same code as at packet level and
 // is covered by the packet-level tests above. The only frame-specific piece
 // is the timestamp -> generation mapping (frame_generation function, unit-tested
-// in rtp.rs), so the tests here focus on what only happens at frame level:
+// in generation.rs), so the tests here focus on what only happens at frame level:
 // several packets share one generation, so the receiver installs a key once
 // and reuses it for the whole frame. Reordering across a frame boundary
 // disturbs that reuse: the receiver must switch back to the previous
