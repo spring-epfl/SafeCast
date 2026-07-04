@@ -410,5 +410,42 @@ fn identical_runs_produce_identical_stats() {
 
 // --------------------------------------------------------------------------
 // Frame-level keying (one generation per frame)
+//
+// The key-window/catch-up/drop machinery is the same code as at packet level and
+// is covered by the packet-level tests above. The only frame-specific piece
+// is the timestamp -> generation mapping (frame_generation function, unit-tested
+// in rtp.rs), so the tests here focus on what only happens at frame level:
+// several packets share one generation, so the receiver installs a key once
+// and reuses it for the whole frame. Reordering across a frame boundary
+// disturbs that reuse: the receiver must switch back to the previous
+// frame's key and forward again (extra installs).
 // --------------------------------------------------------------------------
 
+/// Test 8: A late packet from the previous frame costs exactly two extra key
+/// installs: back to the old frame's key, then forward again.
+#[test]
+fn late_frame_packet_flip_flop_costs_two_installs() {
+    let plain = create_packets(3, 2, 64);
+    let cipher = encrypt_all(Granularity::Frame, &plain);
+
+    let mut rx = receiver(Granularity::Frame, 4, 1_000);
+    // f0p0 f0p1 f1p0 f2p0 (withholding f1p1 = index 3)
+    for i in [0usize, 1, 2, 4] {
+        let mut buf = cipher[i].clone();
+        rx.unprotect(&mut buf).expect("in-order packet failed");
+    }
+    // installs so far: one per new frame = 3: f0p1 rode on the key installed for f0p0
+    // (4 packets delivered, only 3 installs)
+    assert_eq!(rx.stats().installs, 3);
+
+    // the late frame-1 packet needs the frame-1 key, forcing an install back
+    let mut late = cipher[3].clone();
+    rx.unprotect(&mut late).expect("late packet must decrypt");
+    assert_eq!(rx.stats().installs, 4);
+
+    // and the next frame-2 packet forces an install forward again:
+    let mut fwd = cipher[5].clone();
+    rx.unprotect(&mut fwd).expect("packet after the late one failed");
+    assert_eq!(rx.stats().installs, 5);
+    assert_eq!(rx.stats().delivered, 6);
+}
