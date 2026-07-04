@@ -115,3 +115,105 @@ fn receiver(granularity: Granularity, k: usize, seek_cap: u64) -> ReceiverKeyMan
     )
 }
 
+/// Test 1: Equivalence on the easy case: on an undisturbed in-order stream the new
+/// receiver must produce the same bytes and use the same generation per
+/// packet as the old in-order-only receiver (RekeyingStream).
+#[test]
+fn in_order_equivalence_with_old_receiver() {
+    // the equivalence must hold for all three granularities
+    for granularity in [Granularity::EpochOnly, Granularity::Frame, Granularity::Packet] {
+        let plain = create_packets(4, 5, 64);
+        let cipher = encrypt_all(granularity, &plain);
+
+        // old in-order-only receiver (a RekeyingStream used on the decrypt side)
+        let mut old = RekeyingStream::new(granularity, SSRC, StreamRatchet::from_seed(seed()));
+        // new windowed receiver (the ReceiverKeyManager under test)
+        let mut new = receiver(granularity, 8, 1_000);
+
+        // feeding the same ciphertext to both receivers, packet by packet
+        for (i, ct) in cipher.iter().enumerate() {
+            let mut a = ct.clone();
+            old.unprotect(&mut a).expect("old-receiver unprotect failed");
+            let mut b = ct.clone();
+            new.unprotect(&mut b).expect("windowed unprotect failed");
+
+            // both must recover the exact plaintext...
+            assert_eq!(a, plain[i], "old-receiver plaintext mismatch at {i}");
+            assert_eq!(b, plain[i], "windowed plaintext mismatch at {i}");
+            // ...and be on the same generation after each packet
+            assert_eq!(
+                Some(old.generation()),
+                new.installed_generation(),
+                "generation diverged at packet {i} ({granularity:?})"
+            );
+        }
+        // every packet was delivered (none dropped)
+        assert_eq!(new.stats().delivered, cipher.len() as u64);
+    }
+}
+
+/// Test 2: Reordering within the window: every packet decrypts, and the
+/// counters come out exactly as this delivery order predicts.
+///
+/// The whole test runs at packet-level keying: one generation per packet, so
+/// packet i is encrypted under generation i, which makes the expected counter
+/// values below easy to compute.
+///
+/// Delivery order: 64 packets in chunks of 8, each chunk reversed, so packets
+/// arrive as 7,6,...,0, then 15,14,...,8, and so on. The first packet of each
+/// chunk (7, then 15, ...) is 8 generations past what the receiver has seen,
+/// so it triggers one catch-up that derives those 8 keys into the window. The
+/// other 7 packets of the chunk then find their key already there (cache
+/// hits). Hence the asserts below: derivations total = 64 (each generation
+/// derived exactly once), cache hits = 64 - 8 (all but each chunk's first
+/// packet), max catch-up = 8 (one chunk).
+#[test]
+fn shuffle_within_window_decrypts_everything() {
+    // 8 frames x 8 packets = 64 packets
+    let plain = create_packets(8, 8, 64);
+    let cipher = encrypt_all(Granularity::Packet, &plain);
+    let n = cipher.len() as u64;
+
+    // building the delivery order: splitting the 64 packets into chunks of 8 and
+    // reverse each chunk, giving 7,6,...,0, 15,14,...,8, ...
+    // a packet arrives at most 7 positions away from its send position, which
+    // is well inside the key window (K=16) and libsrtp's replay window (128)
+    let chunk = 8usize;
+    let mut order: Vec<usize> = Vec::new();
+    for c in 0..(cipher.len() / chunk) {
+        for i in (c * chunk..(c + 1) * chunk).rev() {
+            order.push(i);
+        }
+    }
+
+    // delivering in that shuffled order: every packet must decrypt to its
+    // original bytes, none may be dropped
+    let mut rx = receiver(Granularity::Packet, 16, 1_000);
+    for &i in &order {
+        let mut buf = cipher[i].clone();
+        rx.unprotect(&mut buf)
+            .unwrap_or_else(|e| panic!("packet {i} dropped: {e:?}"));
+        assert_eq!(buf, plain[i], "plaintext mismatch at {i}");
+    }
+
+    // the counters must match the prediction in the doc comment above
+    let s = rx.stats();
+    
+    // all 64 packets came through
+    assert_eq!(s.delivered, n);
+    
+    // no packet was dropped for any reason
+    assert_eq!(s.drops_behind + s.drops_seek_cap + s.drops_replay + s.drops_auth, 0);
+    
+    // 64 ratchet steps in total: each of the 64 generations was derived
+    // exactly once (reordering caused no repeated derivation work)
+    assert_eq!(s.catchup_steps, n);
+    
+    // each chunk's first packet triggers the catch-up (not a hit); the other
+    // 7 find their key already in the window: 64 - 8 hits
+    assert_eq!(s.cache_hits, n - (n / chunk as u64));
+
+    // the largest single catch-up was one chunk's worth: 8 steps
+    assert_eq!(s.max_catchup, chunk as u64);
+}
+
