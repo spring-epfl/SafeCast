@@ -115,6 +115,10 @@ fn receiver(granularity: Granularity, k: usize, seek_cap: u64) -> ReceiverKeyMan
     )
 }
 
+// --------------------------------------------------------------------------
+// All three granularities
+// --------------------------------------------------------------------------
+
 /// Test 1: Equivalence on the easy case: on an undisturbed in-order stream the new
 /// receiver must produce the same bytes and use the same generation per
 /// packet as the old in-order-only receiver (RekeyingStream).
@@ -151,6 +155,10 @@ fn in_order_equivalence_with_old_receiver() {
         assert_eq!(new.stats().delivered, cipher.len() as u64);
     }
 }
+
+// --------------------------------------------------------------------------
+// Packet-level keying (one generation per packet, so packet i <-> generation i)
+// --------------------------------------------------------------------------
 
 /// Test 2: Reordering within the window: every packet decrypts, and the
 /// counters come out exactly as this delivery order predicts.
@@ -399,4 +407,8 @@ fn identical_runs_produce_identical_stats() {
     // same scenario must produce the exact same counters
     assert_eq!(run(), run());
 }
+
+// --------------------------------------------------------------------------
+// Frame-level keying (one generation per frame)
+// --------------------------------------------------------------------------
 
