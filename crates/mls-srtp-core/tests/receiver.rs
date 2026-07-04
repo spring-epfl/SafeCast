@@ -28,7 +28,7 @@ fn seed() -> Vec<u8> {
 /// payload (derived from its seq), so when a test compares decrypted bytes
 /// against the original it is checking real content, not an all-same buffer
 /// that would match by accident.
-fn make_plain(frames: u32, ppf: u32, payload_len: usize) -> Vec<Vec<u8>> {
+fn create_packets(frames: u32, ppf: u32, payload_len: usize) -> Vec<Vec<u8>> {
     let mut out = Vec::new();
     // RTP sequence number, counting across the whole stream (not per frame)
     let mut seq: u16 = 0;
@@ -85,7 +85,7 @@ fn encrypt_all(granularity: Granularity, plain: &[Vec<u8>]) -> Vec<Vec<u8>> {
 /// starting timestamp and the ticks per frame, Packet needs the index the
 /// epoch started at (base). GenerationScheme is the enum whose variants
 /// carry those numbers.
-fn scheme_for(granularity: Granularity) -> GenerationScheme {
+fn receiver_scheme_for(granularity: Granularity) -> GenerationScheme {
     match granularity {
         // one generation for the whole epoch: every packet maps to 0
         Granularity::EpochOnly => GenerationScheme::EpochOnly,
@@ -105,7 +105,7 @@ fn scheme_for(granularity: Granularity) -> GenerationScheme {
 /// The final 0 picks libsrtp's default replay window (128).
 fn receiver(granularity: Granularity, k: usize, seek_cap: u64) -> ReceiverKeyManager {
     ReceiverKeyManager::new(
-        scheme_for(granularity),
+        receiver_scheme_for(granularity),
         SSRC,
         // same seed as the sender in encrypt_all, so both derive the same keys
         StreamRatchet::from_seed(seed()),
