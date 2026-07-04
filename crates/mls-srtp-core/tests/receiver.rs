@@ -344,3 +344,59 @@ fn gap_catchup_seek_cap_and_d8() {
     rx.unprotect(&mut next).expect("stream must continue after D8 events");
 }
 
+/// Test 5: A duplicated packet is rejected by replay protection.
+#[test]
+fn duplicate_is_rejected_as_replay() {
+    // 12 packets
+    let plain = create_packets(2, 6, 64);
+    let cipher = encrypt_all(Granularity::Packet, &plain);
+
+    // K=16 keeps every key for the 12 packets, so a duplicate
+    // can never be rejected for a missing key, only as a replay
+    let mut rx = receiver(Granularity::Packet, 16, 1_000);
+
+    // delivering packets 0..=10 in order; all decrypt normally
+    for ct in cipher.iter().take(11) {
+        let mut buf = ct.clone();
+        rx.unprotect(&mut buf).expect("in-order packet failed");
+    }
+
+    // delivering packet 5 a second time: its generation (5) is still in the key
+    // window, so the key lookup succeeds and the packet reaches libsrtp,
+    // where the replay database notices seq 5 was already accepted
+    let mut dup = cipher[5].clone();
+    assert_eq!(rx.unprotect(&mut dup), Err(RecvDrop::SrtpReplay));
+    // the drop lands in the replay bucket...
+    assert_eq!(rx.stats().drops_replay, 1);
+    // ...and not in the missing-key bucket: the two causes stay separable
+    assert_eq!(rx.stats().drops_behind, 0, "replay must not count as keying-loss");
+
+    // the next fresh packet (11) still decrypts: rejecting the duplicate
+    // did not disturb the receiver's state
+    let mut next = cipher[11].clone();
+    rx.unprotect(&mut next).expect("stream must continue after replay");
+}
+
+/// Test 6: Determinism: the same scenario twice yields byte-identical stats.
+#[test]
+fn identical_runs_produce_identical_stats() {
+    // one full scenario: encrypt 64 packets, deliver them with every chunk of
+    // 8 reversed (same shuffle as test 2), and return the resulting counters
+    let run = || {
+        let plain = create_packets(8, 8, 64);
+        let cipher = encrypt_all(Granularity::Packet, &plain);
+        let chunk = 8usize;
+        let mut rx = receiver(Granularity::Packet, 16, 1_000);
+        for c in 0..(cipher.len() / chunk) {
+            for i in (c * chunk..(c + 1) * chunk).rev() {
+                let mut buf = cipher[i].clone();
+                let _ = rx.unprotect(&mut buf);
+            }
+        }
+        rx.stats().clone()
+    };
+    // nothing in the pipeline is time- or randomness-dependent, so the exact
+    // same scenario must produce the exact same counters
+    assert_eq!(run(), run());
+}
+
