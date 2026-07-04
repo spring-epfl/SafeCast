@@ -14,7 +14,7 @@
 //! to that clock. Hence, the receiver cannot work out where the epoch's
 //! packet counting started just from the timestamp, the way it can for
 //! frames. That case needs the epoch's starting index (`base`) handed over
-//! explicitly, plus [`crate::index_recovery::IndexRecovery`] to unwrap the
+//! explicitly, plus [`crate::receiver::index_recovery::IndexRecovery`] to unwrap the
 //! 16-bit sequence number.
 
 use crate::granularity::Granularity;
@@ -47,7 +47,7 @@ pub enum GenerationScheme {
     },
     /// One key per packet: `g = extended sequence index - base`, where the
     /// extended index is recovered from the 16-bit RTP sequence number by
-    /// [`crate::index_recovery::IndexRecovery`] and `base` is the extended
+    /// [`crate::receiver::index_recovery::IndexRecovery`] and `base` is the extended
     /// index of the epoch's first packet.
     Packet {
         /// Extended index of the epoch's first packet.

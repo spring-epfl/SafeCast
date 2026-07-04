@@ -26,8 +26,13 @@ use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;
 use srtp::{CryptoPolicy, Error, Session, StreamPolicy};
 
-use crate::generation::{frame_generation, GenerationScheme};
-use crate::index_recovery::IndexRecovery;
+/// Mapping from a packet's header to its generation index `g`.
+pub mod generation;
+/// RFC 3711 sequence-number unwrapping (16-bit seq -> extended index).
+pub mod index_recovery;
+
+use self::generation::{frame_generation, GenerationScheme};
+use self::index_recovery::IndexRecovery;
 use crate::ratchet::{split_key_salt, KeySalt, StreamRatchet};
 use crate::rtp::RTP_HEADER_LEN;
 

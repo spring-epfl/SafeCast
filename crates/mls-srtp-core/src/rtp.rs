@@ -13,7 +13,7 @@
 //! This is sufficient for feeding RTP packets into libsrtp's protect/unprotect.
 //!
 //! (The packet -> generation mapping for the keying schemes lives in
-//! [`crate::generation`], not here.)
+//! [`crate::receiver::generation`], not here.)
 
 /// Fixed RTP header size in bytes: version/flags (1) + payload type (1)
 /// + sequence number (2) + timestamp (4) + SSRC (4) = 12 bytes (RFC 3550 §5.1).

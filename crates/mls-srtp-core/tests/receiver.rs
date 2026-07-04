@@ -6,7 +6,7 @@
 //!   - with gaps: some packets never arrive (loss), leaving holes in the seq
 //!   - duplicated: the same packet arrives more than once (a replay)
 
-use mls_srtp_core::generation::GenerationScheme;
+use mls_srtp_core::receiver::generation::GenerationScheme;
 use mls_srtp_core::granularity::{Granularity, RekeyingStream};
 use mls_srtp_core::ratchet::StreamRatchet;
 use mls_srtp_core::receiver::{RecvDrop, ReceiverKeyManager};
