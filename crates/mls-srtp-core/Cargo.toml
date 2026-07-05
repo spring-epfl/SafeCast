@@ -48,6 +48,11 @@ path = "benches/ratchet_step.rs"
 harness = false
 
 [[bench]]
+name = "granularity_throughput_ideal"
+path = "benches/granularity_throughput_ideal.rs"
+harness = false
+
+[[bench]]
 name = "srtp_throughput_manual"
 path = "benches/srtp_throughput/srtp_throughput_manual.rs"
 harness = false
