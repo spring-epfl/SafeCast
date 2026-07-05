@@ -1,5 +1,11 @@
 # Payload Scaling Investigation
 
+> These measurements were taken on an older build, before
+> later fixes and improvements to our SRTP setup. The methodology and the
+> qualitative conclusion (a large fixed per-packet cost dominates small
+> payloads) still hold. TODO: re-run `srtp_scaling` and `aes_gcm_baseline`
+> and update the numbers.
+
 ## Motivation
 
 The throughput benchmark showed that larger payloads yield higher throughput
