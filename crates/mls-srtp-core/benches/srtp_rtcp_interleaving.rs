@@ -7,9 +7,29 @@
 //! For each of the two ST 2110-10 payload sizes (standard 1424 B and
 //! jumbo 8924 B), two benchmarks are run:
 //!   1. **Baseline:** pure `protect()` loop (no RTCP)
-//!   2. **Interleaved:** same loop, but every 5 wall-clock seconds
-//!      (RFC 3550 §6.2) a `protect_rtcp()` call on a 100-byte RTCP
-//!      packet is triggered
+//!   2. **Interleaved:** same loop, but every N-th packet triggers an
+//!      additional `protect_rtcp()` call on a 100-byte RTCP packet
+//!
+//! N is derived from the ST 2110-10 1080p60 (2.58 Gbps)
+//! packet rate and a 5-second RTCP interval (RFC 3550 §6.2):
+//!   - standard MTU (1424 B): ~226,500 pps  => N ≈ 1,130,000
+//!   - jumbo MTU (8924 B):    ~36,100 pps   => N ≈ 180,000
+//!
+//! Why count packets instead of firing every 5 wall-clock seconds: in real
+//! traffic the two are the same schedule, because the media runs at a
+//! constant packet rate (5 seconds IS N packets). The bench, however,
+//! processes packets as fast as the CPU allows, and the measured per-packet RTCP
+//! share would depend on the benchmark machine's speed. Packet count is the stream's
+//! own clock, so "every N packets" stays faithful to "every 5 seconds of media" at any
+//! bench speed. (A wall-clock check per packet would also put a ~20 ns
+//! clock readout inside the timed loop, which at these per-packet times
+//! would swamp the effect being measured.)
+//!
+//! Why 1080p60 and not 4K/8K: a 4K stream sends 4x the packets per second, 
+//! so N is 4x larger and the per-packet RTCP share (one protect_rtcp every N packets) 
+//! is 4x SMALLER (16x at 8K). 1080p is therefore more or less the worst case for
+//! RTCP interference. If the effect is negligible here, it is even more
+//! negligible at 4K/8K.
 //!
 //! The RTCP packet size is 100 bytes, based on real-world examples:
 //! - ShareTechnote: https://www.sharetechnote.com/html/IMS_SIP_RTP_RTCP.html, 72-byte RTCP packet
@@ -36,13 +56,25 @@ const GCM_TAG_LEN: usize = 16;
 /// https://wiki.wireshark.org/RTCP
 const RTCP_LEN: usize = 100;
 
-/// RTCP sending interval (RFC 3550 §6.2).
-const RTCP_INTERVAL: Duration = Duration::from_secs(5);
+/// ST 2110-10 uncompressed 1080p60 (4:2:2, 10-bit) bitrate in bits/s.
+const BITRATE_BPS: u64 = 2_580_000_000;
+
+/// RTCP sending interval in seconds (RFC 3550 §6.2).
+const RTCP_INTERVAL_S: u64 = 5;
+
+/// Computes the number of RTP packets between RTCP packets (N).
+///
+/// N = packets_per_second * rtcp_interval
+///   = (bitrate_bps / 8 / payload_size) * rtcp_interval_s
+const fn rtcp_interleave_n(payload_size: u64) -> u64 {
+    (BITRATE_BPS / 8 / payload_size) * RTCP_INTERVAL_S
+}
 
 /// The two ST 2110-10 MTU-derived payload sizes.
-const SCENARIOS: &[(usize, &str)] = &[
-    (1424, "1424B_standard"),
-    (8924, "8924B_jumbo"),
+/// N (the RTCP interleaving interval) is computed from the 1080p60 bitrate.
+const SCENARIOS: &[(usize, &str, u64)] = &[
+    (1424, "1424B_standard", rtcp_interleave_n(1424)),
+    (8924, "8924B_jumbo",    rtcp_interleave_n(8924)),
 ];
 
 /// Builds a 2-member MLS group and exports SRTP key material for the sender.
@@ -127,7 +159,7 @@ fn bench_baseline(c: &mut Criterion) {
     // using a long measurement time (10 s) to get a sustained throughput
     group.measurement_time(Duration::from_secs(10));
 
-    for &(payload_size, label) in SCENARIOS {
+    for &(payload_size, label, _n) in SCENARIOS {
         // rtp_len  = 12-byte RTP header + payload (plaintext input to protect())
         // srtp_len = rtp_len + 16-byte GCM tag   (ciphertext output of protect())
         let rtp_len = RTP_HEADER_LEN + payload_size;
@@ -183,8 +215,8 @@ fn bench_baseline(c: &mut Criterion) {
     group.finish();
 }
 
-/// Interleaved: same `protect()` loop, but every 5 wall-clock seconds
-/// also calls `protect_rtcp()` on a 100-byte RTCP packet.
+/// Interleaved: same `protect()` loop, but every N-th iteration also
+/// calls `protect_rtcp()` on a 100-byte RTCP packet.
 ///
 /// Both `protect()` and `protect_rtcp()` are inside the timed section
 /// so that any interference shows up as increased latency.
@@ -195,7 +227,7 @@ fn bench_interleaved(c: &mut Criterion) {
     let mut group = c.benchmark_group("srtp_rtcp_interleaving");
     group.measurement_time(Duration::from_secs(10));
 
-    for &(payload_size, label) in SCENARIOS {
+    for &(payload_size, label, n) in SCENARIOS {
         let rtp_len = RTP_HEADER_LEN + payload_size;
         let srtp_len = rtp_len + GCM_TAG_LEN;
 
@@ -222,12 +254,12 @@ fn bench_interleaved(c: &mut Criterion) {
 
                 let mut seq: u16 = 0;
                 let mut timestamp: u32 = 0;
-                let mut last_rtcp = Instant::now();
+                let mut pkt_count: u64 = 0;
 
                 b.iter_custom(|iters| {
                     let mut total = Duration::ZERO;
                     for _ in 0..iters {
-
+                        
                         // per-packet RTP header fields
                         buf[2..4].copy_from_slice(&seq.to_be_bytes());
                         buf[4..8].copy_from_slice(&timestamp.to_be_bytes());
@@ -239,15 +271,17 @@ fn bench_interleaved(c: &mut Criterion) {
                         // RTP encryption (every iteration, same as baseline)
                         session.protect(&mut buf).expect("protect failed");
 
-                        // RTCP encryption every 5 wall-clock seconds
-                        // (RFC 3550 §6.2 minimum interval).
-                        if last_rtcp.elapsed() >= RTCP_INTERVAL {
+                        // RTCP encryption (every N-th packet only).
+                        // For standard MTU at 1080p60, N ≈ 1,130,000,
+                        // so this fires roughly once per 5 seconds of
+                        // simulated real-time video. Comparing against n - 1
+                        // so the first RTCP comes after one full interval.
+                        if pkt_count % n == n - 1 {
                             let mut rtcp_buf = rtcp_template.clone();
                             session
                                 .protect_rtcp(&mut rtcp_buf)
                                 .expect("protect_rtcp failed");
                             black_box(&rtcp_buf);
-                            last_rtcp = Instant::now();
                         }
 
                         total += t0.elapsed();
@@ -257,6 +291,7 @@ fn bench_interleaved(c: &mut Criterion) {
                         black_box(&buf);
                         seq = seq.wrapping_add(1);
                         timestamp = timestamp.wrapping_add(1);
+                        pkt_count += 1;
                     }
                     total
                 });
