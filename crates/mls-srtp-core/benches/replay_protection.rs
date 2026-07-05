@@ -136,7 +136,7 @@ fn bench_replay_protection(c: &mut Criterion) {
                     black_box(&result);
                     replay_buf
                 },
-                BatchSize::SmallInput,
+                BatchSize::NumIterations(256),
             );
         });
     }

@@ -33,8 +33,8 @@ name = "memory_usage"
 path = "src/bin/memory_usage.rs"
 
 [[bench]]
-name = "srtp_operations"
-path = "benches/srtp_operations.rs"
+name = "replay_protection"
+path = "benches/replay_protection.rs"
 harness = false
 
 [[bench]]
