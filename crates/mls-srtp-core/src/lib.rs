@@ -29,3 +29,4 @@ pub mod rtp;
 pub mod srtp_session;
 pub mod ds_client;
 pub mod multicast;
+pub mod sim;
