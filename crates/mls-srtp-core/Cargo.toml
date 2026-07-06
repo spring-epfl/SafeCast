@@ -5,6 +5,10 @@ edition = "2024"
 description = "Core library for MLS-SRTP: MLS group helpers, RTP packets, SRTP sessions, DS client, multicast"
 
 [dependencies]
+# seeded RNG for the network simulation (sim::network): ChaCha so the same
+# seed reproduces the same disturbed run
+rand = "0.9"
+rand_chacha = "0.9"
 openmls = { workspace = true }
 openmls_rust_crypto = { workspace = true }
 openmls_basic_credential = { workspace = true }

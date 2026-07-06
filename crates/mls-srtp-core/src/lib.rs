@@ -20,6 +20,11 @@
 //!   - [`srtp_session`]: SRTP session creation with AES-128-GCM (RFC 7714)
 //!   - [`ds_client`]: HTTP client for the Authentication Service and Delivery Service
 //!   - [`multicast`]: IP multicast UDP socket helpers for SRTP media transport
+//!
+//! Simulation (evaluation only):
+//!   - [`sim`]: trace-driven simulation of realistic delivery (reordering,
+//!     loss) for benchmarking the keying granularities under a disturbed
+//!     network instead of ideal in-order delivery
 
 pub mod mls;
 pub mod ratchet;
