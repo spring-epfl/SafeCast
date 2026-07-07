@@ -50,7 +50,8 @@ pub enum LossModel {
 /// One network path: fixed transit time, per-packet jitter, loss.
 #[derive(Clone, Copy, Debug)]
 pub struct PathConfig {
-    /// Fixed transit time of this path in ns.
+    /// Fixed transit time of this path in ns, which simulates the real travel
+    /// time that every packet on this path pays. The per-packet jitter below comes on top of it.
     pub base_delay_ns: u64,
     /// Per-packet random extra delay: uniform in 0..=jitter_ns.
     pub jitter_ns: u64,

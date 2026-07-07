@@ -100,6 +100,7 @@ pub struct ReceiverKeyManager {
     frontier: Option<u64>,
     /// Generation whose key is currently loaded in the cipher.
     installed: Option<u64>,
+    /// Most ratchet steps one packet may demand.
     seek_cap: u64,
     stats: RecvStats,
 }
@@ -134,6 +135,32 @@ impl ReceiverKeyManager {
     /// Creates a receiver for `ssrc` with a window of `k` generation keys, a
     /// forward-jump cap of `seek_cap` generations, and the given libsrtp
     /// replay window (`0` = libsrtp default of 128).
+    ///
+    /// Size of the three parameters:
+    /// - `k`: how far BEHIND a packet may arrive and still decrypt (its key
+    ///   must still be in the ring), so it must cover the worst lateness.
+    ///   Every kept key is also forward-secrecy exposure, so k
+    ///   is a tradeoff, not "the bigger the better".
+    /// - `seek_cap`: how far AHEAD a packet may jump: the most ratchet steps
+    ///   one packet can demand. These steps happen before authentication, so seek_cap
+    ///   bounds the work a forged DoS packet can force. A real packet arrival
+    ///   demands a jump of "packets sent before it that are still
+    ///   missing" + 1, and big jumps come from loss, so we size it by the longest outage.
+    ///   Reordering keeps jumps tiny, because the only sent-before-it packets that can still be
+    ///   missing are due to small jitter.
+    ///   Sample calculation (packet-level keying, 1424 B packets leaving
+    ///   every ~4.6 us, jitter up to 100 us): a jump of at most 100/4.6 = ~21 -> ~22 steps. 
+    ///   A 100 ms outage instead leaves 100_000/4.6 = ~21,700 packets missing.
+    ///   TODO: update after EBU numbers
+    /// - `replay_window`: libsrtp remembers the highest packet index it has
+    ///   accepted so far, and rejects every packet arriving more than
+    ///   replay_window positions behind that index, replay or not. At
+    ///   packet-level keying it must be set to `k`, as with a smaller value
+    ///   we reject packets whose key we still hold. Beyond `k` it does not
+    ///   buy anything, as a packet older than `k` is dropped due to its
+    ///   deleted key. At frame level `k` counts frames, not packets, so no
+    ///   comparison there: the window just needs to cover the worst
+    ///   lateness in packets. libsrtp accepts 64..=32767.
     pub fn new(
         scheme: GenerationScheme,
         ssrc: u32,
