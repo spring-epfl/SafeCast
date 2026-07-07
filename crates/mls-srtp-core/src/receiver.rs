@@ -11,8 +11,8 @@
 //!   - too far ahead -> seek-cap drop (an unauthenticated packet must not be
 //!     able to demand unbounded work).
 //!
-//! Durable-state discipline: catch-up runs on a *clone* of the ratchet, and
-//! the real ratchet/window only adopt the clone's result after the packet
+//! We catch-up runs on a clone of the ratchet, and
+//! the real ratchet/window only adopts the clone's result after the packet
 //! authenticates.
 //!
 //! Inherited from the `srtp` crate: on a failed `unprotect` the buffer
@@ -55,8 +55,8 @@ pub enum RecvDrop {
 /// Counters describing everything the receiver did.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct RecvStats {
-    /// Packets decrypted and delivered.
-    pub delivered: u64,
+    /// Packets that authenticated and decrypted.
+    pub decrypted: u64,
     /// In-window cache hits (key found without any derivation).
     pub cache_hits: u64,
     /// Total ratchet steps derived during catch-ups (counted even
@@ -191,11 +191,13 @@ impl ReceiverKeyManager {
     }
 
     /// Decrypts an SRTP packet in place (header || ciphertext || tag ->
-    /// header || payload).
+    /// header || payload). On success returns the generation the packet
+    /// decrypted under, so a caller that knows the packet's true position
+    /// can verify the mapping-to-generation worked.
     /// The flow is four phases: (1) map the packet to a generation `g`,
     /// (2) classify `g` against the key window, (3) fetch or derive its
     /// key, (4) decrypt and only then finalize any state change.
-    pub fn unprotect(&mut self, buf: &mut Vec<u8>) -> Result<(), RecvDrop> {
+    pub fn unprotect(&mut self, buf: &mut Vec<u8>) -> Result<u64, RecvDrop> {
 
         // reject a truncated datagram before touching its seq/ts fields below
         if buf.len() < RTP_HEADER_LEN {
@@ -367,8 +369,8 @@ impl ReceiverKeyManager {
                 if let Some(index) = est_index {
                     self.recovery.update(index);
                 }
-                self.stats.delivered += 1;
-                Ok(())
+                self.stats.decrypted += 1;
+                Ok(g)
             }
 
             // authentication failed or replay protection rejected the packet

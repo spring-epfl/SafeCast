@@ -133,8 +133,8 @@ fn in_order_equivalence_with_old_receiver() {
                 "generation diverged at packet {i} ({granularity:?})"
             );
         }
-        // every packet was delivered (none dropped)
-        assert_eq!(new.stats().delivered, cipher.len() as u64);
+        // every packet was decrypted (none dropped)
+        assert_eq!(new.stats().decrypted, cipher.len() as u64);
     }
 }
 
@@ -181,8 +181,12 @@ fn shuffle_within_window_decrypts_everything() {
     let mut rx = receiver(Granularity::Packet, 16, 1_000);
     for &i in &order {
         let mut buf = cipher[i].clone();
-        rx.unprotect(&mut buf)
+        let g = rx
+            .unprotect(&mut buf)
             .unwrap_or_else(|e| panic!("packet {i} dropped: {e:?}"));
+        // packet-level keying: packet i was encrypted under generation i,
+        // and unprotect reports the generation it decrypted under
+        assert_eq!(g, i as u64, "packet {i} decrypted under generation {g}");
         assert_eq!(buf, plain[i], "plaintext mismatch at {i}");
     }
 
@@ -190,7 +194,7 @@ fn shuffle_within_window_decrypts_everything() {
     let s = rx.stats();
     
     // all 64 packets came through
-    assert_eq!(s.delivered, n);
+    assert_eq!(s.decrypted, n);
     
     // no packet was dropped for any reason
     assert_eq!(s.drops_behind + s.drops_seek_cap + s.drops_replay + s.drops_auth, 0);
@@ -429,5 +433,5 @@ fn late_frame_packet_flip_flop_costs_two_installs() {
     let mut fwd = cipher[5].clone();
     rx.unprotect(&mut fwd).expect("packet after the late one failed");
     assert_eq!(rx.stats().installs, 5);
-    assert_eq!(rx.stats().delivered, 6);
+    assert_eq!(rx.stats().decrypted, 6);
 }
