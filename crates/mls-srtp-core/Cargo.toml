@@ -57,6 +57,11 @@ path = "benches/granularity_throughput_ideal.rs"
 harness = false
 
 [[bench]]
+name = "realistic_receiver"
+path = "benches/realistic_receiver.rs"
+harness = false
+
+[[bench]]
 name = "srtp_throughput_manual"
 path = "benches/srtp_throughput/srtp_throughput_manual.rs"
 harness = false
