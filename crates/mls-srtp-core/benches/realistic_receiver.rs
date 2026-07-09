@@ -114,7 +114,10 @@ struct Args {
     seed: u64,
 
     /// arrivals processed before the timing stats start counting, so cold
-    /// caches and CPU clock ramp-up stay out of the results
+    /// caches and CPU clock ramp-up stay out of the results.
+    /// TODO: warmup=0 gives the same stats as warmup=200000. Maybe because 
+    /// disturb() runs before the timed loop and warms the CPU/caches. Might 
+    /// be worth removing this flag.
     #[arg(long, default_value_t = 50_000)]
     warmup: u64,
 
