@@ -23,9 +23,20 @@
 //!     delivered. Of the packets the network actually delivered, the
 //!     fraction the receiver threw away because their key was already
 //!     deleted.
+//!   - Path attribution: the latency stats above say how slow the calls
+//!     were, but not which calls were slow or why. For instance, are the slowest
+//!     packets (the p99.9 and above) the ones that derived many keys at
+//!     once? Why does disturbance change the mean? To answer such
+//!     questions from data instead of guesses, every successful decrypt
+//!     is classified by the generation g it reports vs the highest g
+//!     seen so far (advance = derived new keys, current = newest key
+//!     reused, straggler = old key served a late packet), and the timing
+//!     is reported per class. Advances are additionally split by depth =
+//!     how many keys that one call derived, showing how the cost grows 
+//!     with the keys derived.
 //!   - (Correctness checks: the network's and the
 //!     receiver's stats must match. Any failure means a
-//!     simulator bug and aborts the run before numbers are printed.).
+//!     simulator bug and aborts the run before numbers are printed.)
 //!
 //! Run (defaults = dual path, 100 us jitter per path, 1e-4 loss per copy, 2 ms path skew):
 //!   cargo bench --package mls-srtp-core --bench realistic_receiver
@@ -33,7 +44,7 @@
 //!   cargo bench --package mls-srtp-core --bench realistic_receiver -- \
 //!       --jitter-ns 0 --loss 0 --single-path
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::time::Instant;
 
 use clap::Parser;
@@ -247,6 +258,23 @@ fn main() {
     let mut warm: Vec<u64> = Vec::with_capacity(warmup);
     let mut measured: Vec<u64> = Vec::with_capacity(schedule.len() - warmup);
 
+    // Path attribution.
+    //   g above max_g = advance   (this call derived new keys)
+    //   g equal       = current   (the key is reused)
+    //   g below       = straggler (a late packet served by an old key)
+    // We keep one list of decrypt times per kind. Advances are
+    // additionally grouped by their depth (= keys derived by that call).
+    // depth_stats maps each depth to how many advances had it and to the
+    // total of their decrypt times, from which the report computes the
+    // mean cost per depth.
+    let mut max_g: Option<u64> = None;
+    let mut advance_times: Vec<u64> = Vec::new();
+    let mut current_times: Vec<u64> = Vec::new();
+    let mut straggler_times: Vec<u64> = Vec::new();
+    // depth -> (how many advances had that depth, their decrypt ns summed)
+    // BTreeMap so the report iterates depths in ascending order "for free"
+    let mut depth_stats: BTreeMap<u64, (u64, u64)> = BTreeMap::new();
+
     // one unprotect per delivered packet, in arrival order
     for (call, &(_arrival_ns, i)) in schedule.iter().enumerate() {
         // untimed setup: fetching packet i's encrypted bytes. The sender only
@@ -285,11 +313,48 @@ fn main() {
         // untimed bookkeeping: a successful decrypt contributes its time,
         // unless it is in the warmup phase
         match res {
-            Ok(_) => {
+            Ok(g) => {
                 if call < warmup {
                     warm.push(dt);
                 } else {
                     measured.push(dt);
+                }
+
+                // path attribution: classifying this call by g vs max_g
+                match max_g {
+                    // straggler: an old key served this late packet
+                    Some(m) if g < m => {
+                        if call >= warmup {
+                            straggler_times.push(dt);
+                        }
+                    }
+                    // current: the newest key reused
+                    Some(m) if g == m => {
+                        if call >= warmup {
+                            current_times.push(dt);
+                        }
+                    }
+                    // advance: g lies above everything seen (or is the
+                    // first packet), so this call derived new keys (depth
+                    // is how many)
+                    _ => {
+                        let depth = match max_g {
+                            Some(m) => g - m,
+                            // first packet: generations 0..=g were derived
+                            None => g + 1,
+                        };
+                        if call >= warmup {
+                            advance_times.push(dt);
+                            // this depth's entry, created as (0, 0) on
+                            // its first advance
+                            let e = depth_stats.entry(depth).or_insert((0, 0));
+                            // one more advance call of this depth
+                            e.0 += 1;
+                            // and its decrypt time is added to the total
+                            e.1 += dt;
+                        }
+                        max_g = Some(g);
+                    }
                 }
             }
             // drops are legitimate outcomes (key already deleted, replay,
@@ -445,6 +510,51 @@ fn main() {
         "          cache_hits={} installs={} catchup_steps={} max_catchup={}",
         recv.cache_hits, recv.installs, recv.catchup_steps, recv.max_catchup
     );
+
+    // Path attribution: per-class timing of the successful decrypts.
+    // Prints one line of timing stats for one class's collected decrypt
+    // times: how many calls, their mean, p99 and max.
+    let class_line = |name: &str, times: &mut Vec<u64>| {
+        // a class that never occurred in this run (e.g. stragglers in a
+        // zero-disturbance run) is still printed as n=0
+        if times.is_empty() {
+            println!("{name} n=0");
+        } else {
+            let mean = mean_ns(times);
+            // pct() picks percentiles by index into a sorted list,
+            // so we first sort the times here
+            times.sort_unstable();
+            // mean, p99, and max
+            println!(
+                "{name} n={} mean={:.1} ns p99={} ns max={} ns",
+                times.len(),
+                mean,
+                pct(times, 0.99),
+                // sorted, so the largest time sits at the end
+                times.last().unwrap()
+            );
+        }
+    };
+    // One line per class. The second and third name start with spaces so
+    // their columns line up under the "paths" label.
+    class_line("paths     advance   (g above max, derives keys):", &mut advance_times);
+    class_line("          current   (g equals max, key reused): ", &mut current_times);
+    class_line("          straggler (g below max, old key):     ", &mut straggler_times);
+
+    // advances broken down by depth (keys derived by that one call):
+    // count and mean per depth, so the cost growth with depth is visible
+    if !depth_stats.is_empty() {
+        // collecting one text piece per depth, smallest depth first
+        let depths: Vec<String> = depth_stats
+            .iter()
+            // d = the depth, n = advance calls of that depth, sum = their
+            // decrypt times added up --> sum/n = the mean cost at that depth
+            .map(|(d, (n, sum))| format!("d={d}: n={n} mean={:.0} ns", *sum as f64 / *n as f64))
+            .collect();
+        // all pieces on one report line, e.g.:
+        //   depths    d=1: n=261 mean=1300 ns; d=2: n=14 mean=1937 ns
+        println!("depths    {}", depths.join("; "));
+    }
 
     // the robustness result: of the delivered packets, the fraction lost
     // because their key was already deleted
