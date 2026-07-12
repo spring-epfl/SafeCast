@@ -1,0 +1,12 @@
+===== K=1 =====
+outcome   decrypted=998319 drops: behind=1681 seek_cap=0 replay=0 auth=0
+keying    loss rate = 1681/1000000 = 1.681e-3
+===== K=2 =====
+outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
+keying    loss rate = 0/1000000 = 0.000e0
+===== K=3 =====
+outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
+keying    loss rate = 0/1000000 = 0.000e0
+===== K=4 =====
+outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
+keying    loss rate = 0/1000000 = 0.000e0

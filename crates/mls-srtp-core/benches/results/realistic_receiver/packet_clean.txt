@@ -1,0 +1,16 @@
+== Realistic Receiver Report ==
+config    granularity=packet payload=1424 B packets=1000000 seed=1
+network   single-path: jitter=0 ns loss=0
+delivery  delivered=1000000 lost_packets=0 (copies lost: a=0 b=0) wins a/b=1000000/0 duplicates_dropped=0
+disorder  reordered=0 lateness p50/p99/p99.9/max=0/0/0/0 gaps=0 max_gap=0
+limits    key_window K=512 seek_cap=4096 replay_window=512
+outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
+          cache_hits=0 installs=1000000 catchup_steps=1000000 max_catchup=1
+paths     advance   (g above max, derives keys): n=950000 mean=1121.4 ns p99=1250 ns max=59208 ns
+          current   (g equals max, key reused):  n=0
+          straggler (g below max, old key):      n=0
+depths    d=1: n=950000 mean=1121 ns
+keying    loss rate = 0/1000000 = 0.000e0
+timing    950000 measured calls (first 50000 of 1000000 arrivals skipped as warmup)
+          mean=1121.4 ns p50=1125 p99=1250 p99.9=1667 max=59208 ns -> 10.36 Gbps at 1452 B wire
+warmup    warmup-region mean=1126.1 ns vs measured mean=1121.4 ns

@@ -1,0 +1,36 @@
+===== K=4 =====
+outcome   decrypted=412698 drops: behind=587302 seek_cap=0 replay=0 auth=0
+keying    loss rate = 587302/1000000 = 5.873e-1
+===== K=8 =====
+outcome   decrypted=595882 drops: behind=404118 seek_cap=0 replay=0 auth=0
+keying    loss rate = 404118/1000000 = 4.041e-1
+===== K=16 =====
+outcome   decrypted=927204 drops: behind=72796 seek_cap=0 replay=0 auth=0
+keying    loss rate = 72796/1000000 = 7.280e-2
+===== K=24 =====
+outcome   decrypted=999900 drops: behind=100 seek_cap=0 replay=0 auth=0
+keying    loss rate = 100/1000000 = 1.000e-4
+===== K=32 =====
+outcome   decrypted=999900 drops: behind=100 seek_cap=0 replay=0 auth=0
+keying    loss rate = 100/1000000 = 1.000e-4
+===== K=64 =====
+outcome   decrypted=999900 drops: behind=100 seek_cap=0 replay=0 auth=0
+keying    loss rate = 100/1000000 = 1.000e-4
+===== K=128 =====
+outcome   decrypted=999900 drops: behind=100 seek_cap=0 replay=0 auth=0
+keying    loss rate = 100/1000000 = 1.000e-4
+===== K=256 =====
+outcome   decrypted=999900 drops: behind=100 seek_cap=0 replay=0 auth=0
+keying    loss rate = 100/1000000 = 1.000e-4
+===== K=400 =====
+outcome   decrypted=999900 drops: behind=100 seek_cap=0 replay=0 auth=0
+keying    loss rate = 100/1000000 = 1.000e-4
+===== K=448 =====
+outcome   decrypted=999980 drops: behind=20 seek_cap=0 replay=0 auth=0
+keying    loss rate = 20/1000000 = 2.000e-5
+===== K=456 =====
+outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
+keying    loss rate = 0/1000000 = 0.000e0
+===== K=512 =====
+outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
+keying    loss rate = 0/1000000 = 0.000e0

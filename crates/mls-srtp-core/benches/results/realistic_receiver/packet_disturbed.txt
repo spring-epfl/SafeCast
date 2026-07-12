@@ -1,0 +1,16 @@
+== Realistic Receiver Report ==
+config    granularity=packet payload=1424 B packets=1000000 seed=1
+network   dual-path (ST 2022-7): jitter=100000 ns/path loss=0.0001 /copy skew=2000000 ns
+delivery  delivered=1000000 lost_packets=0 (copies lost: a=100 b=104) wins a/b=999900/100 duplicates_dropped=999796
+disorder  reordered=724046 lateness p50/p99/p99.9/max=5/19/20/455 gaps=217572 max_gap=17
+limits    key_window K=512 seek_cap=4096 replay_window=512
+outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
+          cache_hits=724046 installs=1000000 catchup_steps=1000000 max_catchup=18
+paths     advance   (g above max, derives keys): n=262233 mean=2194.8 ns p99=5167 ns max=107083 ns
+          current   (g equals max, key reused):  n=0
+          straggler (g below max, old key):      n=687767 mean=630.6 ns p99=792 ns max=59542 ns
+depths    d=1: n=55500 mean=1128 ns; d=2: n=49701 mean=1528 ns; d=3: n=42461 mean=1926 ns; d=4: n=34332 mean=2327 ns; d=5: n=27006 mean=2776 ns; d=6: n=19468 mean=3181 ns; d=7: n=13635 mean=3580 ns; d=8: n=8868 mean=3970 ns; d=9: n=5417 mean=4446 ns; d=10: n=2963 mean=4852 ns; d=11: n=1613 mean=5247 ns; d=12: n=742 mean=5646 ns; d=13: n=341 mean=6058 ns; d=14: n=136 mean=6428 ns; d=15: n=20 mean=7029 ns; d=16: n=24 mean=7203 ns; d=17: n=5 mean=9284 ns; d=18: n=1 mean=8583 ns
+keying    loss rate = 0/1000000 = 0.000e0
+timing    950000 measured calls (first 50000 of 1000000 arrivals skipped as warmup)
+          mean=1062.4 ns p50=625 p99=4375 p99.9=5792 max=107083 ns -> 10.93 Gbps at 1452 B wire
+warmup    warmup-region mean=1048.7 ns vs measured mean=1062.4 ns
