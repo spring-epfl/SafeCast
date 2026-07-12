@@ -117,7 +117,7 @@ struct Args {
     /// replay window in packets: packets arriving more than this
     /// far behind the newest one are rejected. At packet-level keying it
     /// should be set to --key-window
-    #[arg(long, default_value_t = 1024)]
+    #[arg(long, default_value_t = 512)]
     replay_window: u64,
 
     /// network RNG seed: same seed + same config -> identical run
