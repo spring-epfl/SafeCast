@@ -52,7 +52,7 @@ use clap::Parser;
 use mls_srtp_core::granularity::Granularity;
 use mls_srtp_core::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
 use mls_srtp_core::receiver::generation::GenerationScheme;
-use mls_srtp_core::receiver::ReceiverKeyManager;
+use mls_srtp_core::receiver::{ReceiverKeyManager, RecvStats};
 use mls_srtp_core::rtp::RTP_HEADER_LEN;
 use mls_srtp_core::sim::network::{disturb, LossModel, NetworkConfig, PathConfig};
 use mls_srtp_core::sim::sender::{SimulatedSender, StreamModel, FRAME_PERIOD, GCM_TAG_LEN, START_TS};
@@ -147,6 +147,15 @@ fn parse_granularity(s: &str) -> Granularity {
     }
 }
 
+/// The granularity's name, as printed in reports and CSV rows.
+fn gran_label(g: Granularity) -> &'static str {
+    match g {
+        Granularity::EpochOnly => "epoch",
+        Granularity::Frame => "frame",
+        Granularity::Packet => "packet",
+    }
+}
+
 /// The --loss flag as a loss model: 0 skips the loss,
 /// anything else is the per-copy independent loss probability.
 fn loss_model(p: f64) -> LossModel {
@@ -169,10 +178,95 @@ fn pct(sorted: &[u64], q: f64) -> u64 {
     sorted[((sorted.len() - 1) as f64 * q).round() as usize]
 }
 
-fn main() {
-    let args = Args::parse();
-    let granularity = parse_granularity(&args.granularity);
+/// Everything that defines one run. The single-run mode fills this from
+/// the command-line flags, the sweep constructs one per configuration.
+struct RunConfig {
+    granularity: Granularity, // keying granularity: epoch, frame or packet
+    payload: usize,           // media payload bytes per packet
+    packets: u64,             // number of packets to send
+    jitter_ns: u64,           // per-path jitter: each copy's random extra delay is uniform in 0..=this
+    loss: f64,                // per-copy loss probability on each path
+    skew_ns: u64,             // path B's extra base delay over path A (ST 2022-7)
+    single_path: bool,        // path A only: no dual-path redundancy and no merge
+    key_window: usize,        // K: how many generation keys the receiver keeps (its ring size)
+    seek_cap: u64,            // most ratchet steps one packet may demand at once
+    replay_window: u64,       // packets more than this far behind the newest one are rejected
+    seed: u64,                // network RNG seed: same seed and config give an identical run
+    warmup: u64,              // arrivals processed before the timing stats start counting
+}
 
+/// Timing summary of one kind of successful decrypt:
+/// advance (derived new keys), current (reused the newest key) or
+/// straggler (an old key served a late packet). This struct holds one
+/// kind's timing: how many calls it had, their mean, p99 and max.
+/// n = 0 means no call of that kind occurred in the run.
+struct ClassSummary {
+    n: usize,
+    mean: f64,
+    p99: u64,
+    max: u64,
+}
+
+/// Builds the ClassSummary of one kind: takes the decrypt times the
+/// measurement loop collected for that kind (advance, current or
+/// straggler) and computes their count, mean, p99 and max.
+fn summarize_class(mut times: Vec<u64>) -> ClassSummary {
+    if times.is_empty() {
+        return ClassSummary { n: 0, mean: 0.0, p99: 0, max: 0 };
+    }
+    let mean = mean_ns(&times);
+    // pct() picks percentiles by index into a sorted list, so we sort first
+    times.sort_unstable();
+    ClassSummary {
+        n: times.len(),
+        mean,
+        p99: pct(&times, 0.99),
+        max: *times.last().unwrap(),
+    }
+}
+
+/// Everything one run produced. `print_report` prints this and
+/// `csv_row` renders it as one CSV line.
+struct Outcome {
+    /// The network's ground-truth counters (delivery, losses, disorder).
+    net: NetworkStats,
+    /// The receiver's counters (outcomes per packet, work done).
+    recv: RecvStats,
+    /// How many packets the arrival schedule contained.
+    arrivals: usize,
+    /// How many arrivals were skipped as warmup.
+    warmup_used: usize,
+    /// The keying-loss rate: drops/delivered.
+    keying_loss: f64,
+    /// Of the delivered packets, the fraction not decrypted for any reason.
+    undecrypted: f64,
+    /// Bytes of one packet on the wire (header + payload + tag).
+    wire_len: usize,
+    /// Throughput implied by the mean: wire_bits/mean = Gbps.
+    gbps: f64,
+    /// The measured decrypt times summarized.
+    measured_n: usize,
+    mean_ns: f64,
+    p50: u64,
+    p99: u64,
+    p999: u64,
+    max: u64,
+    /// The warmup region's sample count and mean (None when warmup was 0).
+    warm_n: usize,
+    warm_mean: Option<f64>,
+    /// Path attribution: per-class timing summaries.
+    advance: ClassSummary,
+    current: ClassSummary,
+    straggler: ClassSummary,
+    /// depth -> (how many advances derived that many keys, their ns summed).
+    depth_stats: BTreeMap<u64, (u64, u64)>,
+}
+
+/// Runs one full measurement: builds the stream, disturbs it, walks the
+/// arrival order timing each `unprotect`, verifies the counters, and
+/// returns everything as an `Outcome`. Panics when a correctness check
+/// fails, so no untrustworthy numbers can be reported.
+fn run(cfg: &RunConfig) -> Outcome {
     // ------------------------------------------------------------------
     // 1. Setup: the stream model and its two endpoints, keyed from the
     //    same ratchet seed
@@ -181,19 +275,19 @@ fn main() {
     // the stream blueprint: given a packet index i it answers, by formula,
     // what that packet looks like (header fields, payload bytes) and when
     // it leaves the sender
-    let model = StreamModel::new(args.payload, SSRC);
+    let model = StreamModel::new(cfg.payload, SSRC);
 
     // the encrypting side: hands out the model's packets one by one in
     // send order, rekeying at every `granularity` boundary with keys drawn
     // from the ratchet
     let mut sender =
-        SimulatedSender::new(model, granularity, StreamRatchet::from_seed(ratchet_seed()));
+        SimulatedSender::new(model, cfg.granularity, StreamRatchet::from_seed(ratchet_seed()));
 
     // How the receiver maps an arriving packet's header to a generation
     // (= which key decrypts it). The rule needs the stream's zero points,
     // and they must match where the sender starts counting. In our setup, 
     // the first frame carries timestamp START_TS and the first packet has index 0.
-    let scheme = GenerationScheme::for_granularity(granularity, START_TS, FRAME_PERIOD, 0);
+    let scheme = GenerationScheme::for_granularity(cfg.granularity, START_TS, FRAME_PERIOD, 0);
 
     // the receiver under test: decrypts whatever arrives, in arrival
     // order, keeping the last K generation keys. Seeded with the same
@@ -203,9 +297,9 @@ fn main() {
         scheme,
         SSRC,
         StreamRatchet::from_seed(ratchet_seed()),
-        args.key_window,
-        args.seek_cap,
-        args.replay_window,
+        cfg.key_window,
+        cfg.seek_cap,
+        cfg.replay_window,
     );
 
     // ------------------------------------------------------------------
@@ -216,32 +310,32 @@ fn main() {
     // configured jitter and loss act on top of the fixed transit time
     let path_a = PathConfig {
         base_delay_ns: BASE_DELAY_NS,
-        jitter_ns: args.jitter_ns,
-        loss: loss_model(args.loss),
+        jitter_ns: cfg.jitter_ns,
+        loss: loss_model(cfg.loss),
     };
 
     // path B: the path of the redundant ST 2022-7 copy: same jitter and
     // loss level, but its transit time is longer by the skew. None in
     // single-path mode, which switches duplication off.
-    let path_b = (!args.single_path).then_some(PathConfig {
-        base_delay_ns: BASE_DELAY_NS + args.skew_ns,
-        jitter_ns: args.jitter_ns,
-        loss: loss_model(args.loss),
+    let path_b = (!cfg.single_path).then_some(PathConfig {
+        base_delay_ns: BASE_DELAY_NS + cfg.skew_ns,
+        jitter_ns: cfg.jitter_ns,
+        loss: loss_model(cfg.loss),
     });
 
     // the whole network between sender and receiver: the path(s), plus the
     // RNG seed driving every random decision (jitter and losses)
-    let cfg = NetworkConfig {
+    let net_cfg = NetworkConfig {
         path_a,
         path_b,
-        seed: args.seed,
+        seed: cfg.seed,
     };
 
     // Pushing all packets through the network. We get back the arrival order
     // (one (arrival time, packet index) pair per delivered packet, sorted
     // by arrival) and stats about what the network did to the stream
     // (e.g., copies lost per path).
-    let (schedule, net) = disturb(args.packets, |i| model.send_ns(i), &cfg);
+    let (schedule, net) = disturb(cfg.packets, |i| model.send_ns(i), &net_cfg);
 
     // ------------------------------------------------------------------
     // 3. Measurement loop: producing each arriving packet and benchmarking the
@@ -254,7 +348,7 @@ fn main() {
     // per-call decrypt times (ns) of the successful calls, split at the
     // warmup boundary: `warm` is reported but not part of the results,
     // `measured` is what the stats below are computed from
-    let warmup = (args.warmup as usize).min(schedule.len());
+    let warmup = (cfg.warmup as usize).min(schedule.len());
     let mut warm: Vec<u64> = Vec::with_capacity(warmup);
     let mut measured: Vec<u64> = Vec::with_capacity(schedule.len() - warmup);
 
@@ -365,7 +459,7 @@ fn main() {
     }
 
     // everything the receiver counted, to be checked against the network's counters below
-    let recv = receiver.stats();
+    let recv = receiver.stats().clone();
 
     // ------------------------------------------------------------------
     // 4. Correctness checks: the network's counters and the receiver's
@@ -398,7 +492,9 @@ fn main() {
 
     // packet-level only: an arrival that jumped over s missing packets lands s + 1 generations past the
     // frontier, so the worst network jump and the worst receiver catch-up must agree exactly
-    if matches!(granularity, Granularity::Packet) && recv.drops_seek_cap == 0 && net.delivered > 0
+    if matches!(cfg.granularity, Granularity::Packet)
+        && recv.drops_seek_cap == 0
+        && net.delivered > 0
     {
         assert_eq!(
             recv.max_catchup,
@@ -419,11 +515,20 @@ fn main() {
         0.0
     };
 
+    // the all-cause failure rate: of the delivered packets, the fraction
+    // not decrypted for any reason (key deleted, replay window, seek cap).
+    // Unlike keying_loss it does not depend on which check caught a packet
+    let undecrypted = if net.delivered > 0 {
+        (net.delivered - recv.decrypted) as f64 / net.delivered as f64
+    } else {
+        0.0
+    };
+
     assert!(
         !measured.is_empty(),
         "no successful decrypts after warmup: nothing to report (packets={}, warmup={})",
-        args.packets,
-        args.warmup
+        cfg.packets,
+        cfg.warmup
     );
 
     // mean of the measured decrypt times, in ns
@@ -433,16 +538,39 @@ fn main() {
     // calculated below 
     let mut sorted = measured;
     sorted.sort_unstable();
-    
+
     // wire bytes per packet for the throughput calculation
-    let wire_len = RTP_HEADER_LEN + args.payload + GCM_TAG_LEN;
+    let wire_len = RTP_HEADER_LEN + cfg.payload + GCM_TAG_LEN;
     // throughput: bits-per-packet/ns-per-packet = Gbps
     let gbps = (wire_len as f64 * 8.0) / mean_measured;
 
-    // ------------------------------------------------------------------
-    // 6. Report
-    // ------------------------------------------------------------------
+    Outcome {
+        net,
+        recv,
+        arrivals: schedule.len(),
+        warmup_used: warmup,
+        keying_loss,
+        undecrypted,
+        wire_len,
+        gbps,
+        measured_n: sorted.len(),
+        mean_ns: mean_measured,
+        p50: pct(&sorted, 0.50),
+        p99: pct(&sorted, 0.99),
+        p999: pct(&sorted, 0.999),
+        max: *sorted.last().unwrap(),
+        warm_n: warm.len(),
+        warm_mean: (!warm.is_empty()).then(|| mean_ns(&warm)),
+        advance: summarize_class(advance_times),
+        current: summarize_class(current_times),
+        straggler: summarize_class(straggler_times),
+        depth_stats,
+    }
+}
 
+
+/// Prints the full single-run report.
+fn print_report(cfg: &RunConfig, out: &Outcome) {
     println!("== Realistic Receiver Report ==");
 
     // --- configuration ---
@@ -450,21 +578,23 @@ fn main() {
     // the stream configuration of this run
     println!(
         "config    granularity={} payload={} B packets={} seed={}",
-        args.granularity, args.payload, args.packets, args.seed
+        gran_label(cfg.granularity),
+        cfg.payload,
+        cfg.packets,
+        cfg.seed
     );
 
     // the network configuration: dual-path with skew, or single path
-    match cfg.path_b {
-        Some(b) => println!(
-            "network   dual-path (ST 2022-7): jitter={} ns/path loss={} /copy skew={} ns",
-            args.jitter_ns,
-            args.loss,
-            b.base_delay_ns - cfg.path_a.base_delay_ns
-        ),
-        None => println!(
+    if cfg.single_path {
+        println!(
             "network   single-path: jitter={} ns loss={}",
-            args.jitter_ns, args.loss
-        ),
+            cfg.jitter_ns, cfg.loss
+        );
+    } else {
+        println!(
+            "network   dual-path (ST 2022-7): jitter={} ns/path loss={} /copy skew={} ns",
+            cfg.jitter_ns, cfg.loss, cfg.skew_ns
+        );
     }
 
     // --- network stats ---
@@ -473,15 +603,15 @@ fn main() {
     // path's copy won the merge
     println!(
         "delivery  delivered={} lost_packets={} (copies lost: a={} b={}) wins a/b={}/{} duplicates_dropped={}",
-        net.delivered,
-        net.lost_packets,
-        net.lost_a,
-        net.lost_b,
-        net.wins_a,
-        net.wins_b,
-        net.duplicates_dropped
+        out.net.delivered,
+        out.net.lost_packets,
+        out.net.lost_a,
+        out.net.lost_b,
+        out.net.wins_a,
+        out.net.wins_b,
+        out.net.duplicates_dropped
     );
-    let disp = net.displacement;
+    let disp = out.net.displacement;
     // measured disorder of the arrivals: how far behind packets landed
     // (lateness) and how many not-yet-arrived packets an arrival jumped
     // over
@@ -495,57 +625,53 @@ fn main() {
     // the receiver's three limits
     println!(
         "limits    key_window K={} seek_cap={} replay_window={}",
-        args.key_window, args.seek_cap, args.replay_window
+        cfg.key_window, cfg.seek_cap, cfg.replay_window
     );
 
     // receiver ledger: every delivered packet's fate (decrypted, or which drop reason)
     println!(
         "outcome   decrypted={} drops: behind={} seek_cap={} replay={} auth={}",
-        recv.decrypted, recv.drops_behind, recv.drops_seek_cap, recv.drops_replay, recv.drops_auth
+        out.recv.decrypted,
+        out.recv.drops_behind,
+        out.recv.drops_seek_cap,
+        out.recv.drops_replay,
+        out.recv.drops_auth
     );
 
     // the receiver's work counters: key-ring hits, cipher installs,
     // ratchet derivations, worst single catch-up
     println!(
         "          cache_hits={} installs={} catchup_steps={} max_catchup={}",
-        recv.cache_hits, recv.installs, recv.catchup_steps, recv.max_catchup
+        out.recv.cache_hits, out.recv.installs, out.recv.catchup_steps, out.recv.max_catchup
     );
 
     // Path attribution: per-class timing of the successful decrypts.
-    // Prints one line of timing stats for one class's collected decrypt
-    // times: how many calls, their mean, p99 and max.
-    let class_line = |name: &str, times: &mut Vec<u64>| {
+    // Prints one line of timing stats for one class's summary: how many
+    // calls, their mean, p99 and max.
+    let class_line = |name: &str, c: &ClassSummary| {
         // a class that never occurred in this run (e.g. stragglers in a
         // zero-disturbance run) is still printed as n=0
-        if times.is_empty() {
+        if c.n == 0 {
             println!("{name} n=0");
         } else {
-            let mean = mean_ns(times);
-            // pct() picks percentiles by index into a sorted list,
-            // so we first sort the times here
-            times.sort_unstable();
-            // mean, p99, and max
             println!(
                 "{name} n={} mean={:.1} ns p99={} ns max={} ns",
-                times.len(),
-                mean,
-                pct(times, 0.99),
-                // sorted, so the largest time sits at the end
-                times.last().unwrap()
+                c.n, c.mean, c.p99, c.max
             );
         }
     };
     // One line per class. The second and third name start with spaces so
     // their columns line up under the "paths" label.
-    class_line("paths     advance   (g above max, derives keys):", &mut advance_times);
-    class_line("          current   (g equals max, key reused): ", &mut current_times);
-    class_line("          straggler (g below max, old key):     ", &mut straggler_times);
+    class_line("paths     advance   (g above max, derives keys):", &out.advance);
+    class_line("          current   (g equals max, key reused): ", &out.current);
+    class_line("          straggler (g below max, old key):     ", &out.straggler);
 
     // advances broken down by depth (keys derived by that one call):
     // count and mean per depth, so the cost growth with depth is visible
-    if !depth_stats.is_empty() {
+    if !out.depth_stats.is_empty() {
         // collecting one text piece per depth, smallest depth first
-        let depths: Vec<String> = depth_stats
+        let depths: Vec<String> = out
+            .depth_stats
             .iter()
             // d = the depth, n = advance calls of that depth, sum = their
             // decrypt times added up --> sum/n = the mean cost at that depth
@@ -560,7 +686,7 @@ fn main() {
     // because their key was already deleted
     println!(
         "keying    loss rate = {}/{} = {:.3e}",
-        recv.drops_behind, net.delivered, keying_loss
+        out.recv.drops_behind, out.net.delivered, out.keying_loss
     );
 
     // --- timing ---
@@ -569,29 +695,57 @@ fn main() {
     // excluded as warmup
     println!(
         "timing    {} measured calls (first {} of {} arrivals skipped as warmup)",
-        sorted.len(),
-        warmup,
-        schedule.len()
+        out.measured_n, out.warmup_used, out.arrivals
     );
 
     // the latency distribution and the throughput its mean implies
     println!(
         "          mean={:.1} ns p50={} p99={} p99.9={} max={} ns -> {:.2} Gbps at {} B wire",
-        mean_measured,
-        pct(&sorted, 0.50),
-        pct(&sorted, 0.99),
-        pct(&sorted, 0.999),
-        sorted.last().unwrap(),
-        gbps,
-        wire_len
+        out.mean_ns, out.p50, out.p99, out.p999, out.max, out.gbps, out.wire_len
     );
 
-    if !warm.is_empty() {
+    if let Some(warm_mean) = out.warm_mean {
         // an empirical check whether warmup was effective
         println!(
             "warmup    warmup-region mean={:.1} ns vs measured mean={:.1} ns",
-            mean_ns(&warm),
-            mean_measured
+            warm_mean, out.mean_ns
         );
+    }
+}
+
+        );
+/// Entry point. Two modes: --sweep runs the whole measurement grid and
+/// exports to a CSV, everything else is one run of one configuration with the
+/// report printed.
+fn main() {
+    // the command-line flags, with defaults for everything not given
+    let args = Args::parse();
+
+    // single-run mode: the flags become the one configuration to measure
+    let cfg = RunConfig {
+        granularity: parse_granularity(&args.granularity),
+        payload: args.payload,
+        packets: args.packets,
+        jitter_ns: args.jitter_ns,
+        loss: args.loss,
+        skew_ns: args.skew_ns,
+        single_path: args.single_path,
+        key_window: args.key_window,
+        seek_cap: args.seek_cap,
+        replay_window: args.replay_window,
+        seed: args.seed,
+        warmup: args.warmup,
+    };
+
+    // the measurement itself: builds the stream, disturbs it, and 
+    // times every decrypt
+    let out = run(&cfg);
+
+    // the full human-readable report on stdout
+    print_report(&cfg, &out);
+
+    // a single run appends to tahe CSV when asked
+    if let Some(path) = &args.csv {
+        append_csv(path, &csv_row("single", &cfg, &out, 1, screen_ok(&out)));
     }
 }
