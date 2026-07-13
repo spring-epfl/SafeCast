@@ -79,6 +79,12 @@ const LIBSRTP_REPLAY_MAX: u64 = 32_767;
 /// packet arriving further behind gets the wrong rollover counter,
 /// therefore the wrong AES-GCM nonce, and fails authentication. libsrtp 
 /// caps the replay window at 32767 for the same reason.
+///
+/// This limit only entered the picture when we considered different payload sizes.
+/// At 1424 B the worst lateness the network produces is about 455 positions,
+/// nowhere near it. But the lateness in positions grows as the payload
+/// shrinks, and at 16 B the 2 ms path skew spans about 40,800 positions,
+/// so there the rescued path-B copies cross this limit and fail authentication.
 const MAX_SEQ_LATENESS: u64 = 32_768;
 
 /// A fixed 32-byte ratchet seed, used by sender and receiver alike so both
