@@ -65,6 +65,22 @@ const SSRC: u32 = 0xFEED_F00D;
 /// This value is mostly to simulate a real transit time.
 const BASE_DELAY_NS: u64 = 1_000_000;
 
+/// Largest replay window libsrtp accepts (see the replay_window notes on
+/// `ReceiverKeyManager::new`).
+const LIBSRTP_REPLAY_MAX: u64 = 32_767;
+
+/// Half the 16-bit RTP sequence number space. libsrtp reconstructs a
+/// packet's 48-bit index by picking the index closest to the newest
+/// authenticated one whose low 16 bits equal the packet's seq field
+/// (indexes sharing their low 16 bits sit 65,536 apart, so a packet
+/// 40,000 behind looks identical to one 25,536 ahead, and the ahead one
+/// wins by being closer). That guess is correct only for
+/// packets less than MAX_SEQ_LATENESS positions behind the newest one. A genuine
+/// packet arriving further behind gets the wrong rollover counter,
+/// therefore the wrong AES-GCM nonce, and fails authentication. libsrtp 
+/// caps the replay window at 32767 for the same reason.
+const MAX_SEQ_LATENESS: u64 = 32_768;
+
 /// A fixed 32-byte ratchet seed, used by sender and receiver alike so both
 /// derive the same key chain.
 fn ratchet_seed() -> Vec<u8> {
@@ -124,11 +140,7 @@ struct Args {
     #[arg(long, default_value_t = 1)]
     seed: u64,
 
-    /// arrivals processed before the timing stats start counting, so cold
-    /// caches and CPU clock ramp-up stay out of the results.
-    /// TODO: warmup=0 gives the same stats as warmup=200000. Maybe because 
-    /// disturb() runs before the timed loop and warms the CPU/caches. Might 
-    /// be worth removing this flag.
+    /// arrivals processed before the timing stats start counting
     #[arg(long, default_value_t = 50_000)]
     warmup: u64,
 
@@ -369,8 +381,18 @@ fn run(cfg: &RunConfig) -> Outcome {
     // BTreeMap so the report iterates depths in ascending order "for free"
     let mut depth_stats: BTreeMap<u64, (u64, u64)> = BTreeMap::new();
 
+    // the newest packet index that authenticated so far. We need this
+    // because the auth checks in the loop compare each packet's lateness
+    // against it
+    let mut max_authed_index: Option<u64> = None;
+
     // one unprotect per delivered packet, in arrival order
     for (call, &(_arrival_ns, i)) in schedule.iter().enumerate() {
+        // how many positions packet i lies behind the highest packet
+        // index that decrypted successfully (0 when i lies ahead of it,
+        // or when nothing decrypted yet)
+        let lateness = max_authed_index.map_or(0, |m| m.saturating_sub(i));
+
         // untimed setup: fetching packet i's encrypted bytes. The sender only
         // produces in send order, so a late packet that arrives too early forces
         // production of everything sent before it (that hasn't arrived yet). Those 
@@ -408,6 +430,19 @@ fn run(cfg: &RunConfig) -> Outcome {
         // unless it is in the warmup phase
         match res {
             Ok(g) => {
+                // decryption succeeded, so libsrtp's index guess was
+                // right, which is impossible for a packet more than
+                // MAX_SEQ_LATENESS positions behind (see the constant)
+                assert!(
+                    lateness <= MAX_SEQ_LATENESS,
+                    "packet {i} decrypted although {lateness} positions behind"
+                );
+                // libsrtp's newest-index reference advances on exactly
+                // this event, so our counter advances with it
+                if max_authed_index.map_or(true, |m| i > m) {
+                    max_authed_index = Some(i);
+                }
+
                 if call < warmup {
                     warm.push(dt);
                 } else {
@@ -451,9 +486,17 @@ fn run(cfg: &RunConfig) -> Outcome {
                     }
                 }
             }
-            // drops are legitimate outcomes (key already deleted, replay,
-            // or seek cap reached). RecvStats counted them and the
-            // correctness checks below verify that everything adds up
+            // A genuine packet fails authentication only when it arrived
+            // at least MAX_SEQ_LATENESS positions behind (libsrtp then
+            // reconstructs the wrong rollover counter, so the wrong
+            // AES-GCM nonce). The simulation never corrupts bytes, so any
+            // other authentication failure is a real key or nonce bug
+            Err(RecvDrop::AuthFail) => {
+                assert!(
+                    lateness >= MAX_SEQ_LATENESS,
+                    "packet {i} failed authentication although only {lateness} positions behind"
+                );
+            }
             Err(_) => {}
         }
     }
@@ -477,13 +520,11 @@ fn run(cfg: &RunConfig) -> Outcome {
         "ledger mismatch: network delivered vs receiver outcomes"
     );
 
-    // the simulation never corrupts bytes, so authentication can only fail
-    // through a real key/nonce bug: the auth-failure count must be 0 here
-    assert_eq!(recv.drops_auth, 0, "auth failure on a genuine packet");
-
     // every generation 0..=frontier was derived exactly once, so the
-    // derivation count must equal frontier + 1: catch-ups never re-derive,
-    // no derivation was rolled back (drops_auth = 0, asserted above)
+    // derivation count must equal frontier + 1: catch-ups never re-derive.
+    // Auth failures do not disturb this: they hit only packets far behind
+    // the frontier (see MAX_SEQ_LATENESS), whose generation was derived long
+    // before, so no derivation is involved
     let frontier_plus_one = receiver.frontier().map_or(0, |f| f + 1);
     assert_eq!(
         recv.catchup_steps, frontier_plus_one,
