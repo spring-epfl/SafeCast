@@ -38,6 +38,8 @@
 //!     receiver's stats must match. Any failure means a
 //!     simulator bug and aborts the run before numbers are printed.)
 //!
+//!   - --csv <path> appends one row per run, so runs can be collected
+//!     into one table. The row holds the run's configuration and its results.
 //! Run (defaults = dual path, 100 us jitter per path, 1e-4 loss per copy, 2 ms path skew):
 //!   cargo bench --package mls-srtp-core --bench realistic_receiver
 //! Zero-disturbance run for the ideal-benchmark comparison:
@@ -149,6 +151,11 @@ struct Args {
     /// arrivals processed before the timing stats start counting
     #[arg(long, default_value_t = 50_000)]
     warmup: u64,
+
+    /// to append one CSV row (configuration + results) per run to
+    /// this file
+    #[arg(long)]
+    csv: Option<String>,
 
     /// hidden flag passed by `cargo bench` (ignored)
     #[arg(long, hide = true)]
@@ -758,6 +765,129 @@ fn print_report(cfg: &RunConfig, out: &Outcome) {
             warm_mean, out.mean_ns
         );
     }
+}
+
+// ----------------------------------------------------------------------
+// CSV output
+// ----------------------------------------------------------------------
+
+/// The CSV column names. `group` says which sweep a row belongs to: payload, k_packet or
+/// k_frame (single runs write single).
+const CSV_HEADER: &str = "group,granularity,payload,packets,jitter_ns,loss,skew_ns,single_path,\
+key_window,seek_cap,replay_window,seed,warmup,ppf,spacing_ns,\
+delivered,lost_packets,lost_a,lost_b,wins_a,wins_b,duplicates_dropped,\
+reordered,lateness_p50,lateness_p99,lateness_p999,lateness_max,gaps,max_gap,\
+decrypted,drops_behind,drops_seek_cap,drops_replay,drops_auth,\
+cache_hits,installs,catchup_steps,max_catchup,keying_loss,undecrypted_rate,\
+wire_len,measured_calls,mean_ns,p50_ns,p99_ns,p999_ns,max_ns,gbps,\
+warmup_calls,warmup_mean_ns,advance_n,advance_mean_ns,current_n,current_mean_ns,\
+straggler_n,straggler_mean_ns";
+
+/// One run as one CSV line, in CSV_HEADER's column order.
+fn csv_row(group: &str, cfg: &RunConfig, out: &Outcome) -> String {
+    // when a kind had zero calls, its CSV field stays empty (writing 0
+    // would look like a measured mean of zero ns)
+    let opt_mean = |n: usize, mean: f64| -> String {
+        if n == 0 {
+            String::new()
+        } else {
+            mean.to_string()
+        }
+    };
+
+    // same emptiness rule for the warmup mean
+    let warm_mean = out.warm_mean.map_or(String::new(), |m| m.to_string());
+
+    // how many packets one frame splits into at this payload size, and how
+    // far apart they leave the sender. Writing them into the CSV saves 
+    // recomputing them when reading it
+    let ppf = (FRAME_BYTES / cfg.payload).max(1) as u64;
+    let spacing_ns = 1e9 / (FPS * ppf) as f64;
+    let disp = out.net.displacement;
+    // one value per CSV_HEADER column, in the same order
+    format!(
+        "{group},{},{},{},{},{},{},{},{},{},{},{},{},{ppf},{spacing_ns},\
+{},{},{},{},{},{},{},\
+{},{},{},{},{},{},{},\
+{},{},{},{},{},\
+{},{},{},{},{},{},\
+{},{},{},{},{},{},{},{},\
+{},{warm_mean},{},{},{},{},{},{}",
+        gran_label(cfg.granularity),
+        cfg.payload,
+        cfg.packets,
+        cfg.jitter_ns,
+        cfg.loss,
+        cfg.skew_ns,
+        cfg.single_path,
+        cfg.key_window,
+        cfg.seek_cap,
+        cfg.replay_window,
+        cfg.seed,
+        cfg.warmup,
+        out.net.delivered,
+        out.net.lost_packets,
+        out.net.lost_a,
+        out.net.lost_b,
+        out.net.wins_a,
+        out.net.wins_b,
+        out.net.duplicates_dropped,
+        disp.reordered,
+        disp.p50,
+        disp.p99,
+        disp.p99_9,
+        disp.max_lateness,
+        disp.gaps,
+        disp.max_gap,
+        out.recv.decrypted,
+        out.recv.drops_behind,
+        out.recv.drops_seek_cap,
+        out.recv.drops_replay,
+        out.recv.drops_auth,
+        out.recv.cache_hits,
+        out.recv.installs,
+        out.recv.catchup_steps,
+        out.recv.max_catchup,
+        out.keying_loss,
+        out.undecrypted,
+        out.wire_len,
+        out.measured_n,
+        out.mean_ns,
+        out.p50,
+        out.p99,
+        out.p999,
+        out.max,
+        out.gbps,
+        out.warm_n,
+        out.advance.n,
+        opt_mean(out.advance.n, out.advance.mean),
+        out.current.n,
+        opt_mean(out.current.n, out.current.mean),
+        out.straggler.n,
+        opt_mean(out.straggler.n, out.straggler.mean),
+    )
+}
+
+/// Appends one row to the CSV file, creating it (and its directory) with
+/// the header line first when it does not exist or is empty.
+fn append_csv(path: &str, row: &str) {
+    // creating the file's directory if it does not exist yet
+    if let Some(dir) = Path::new(path).parent() {
+        std::fs::create_dir_all(dir).expect("cannot create the CSV's directory");
+    }
+    // opening for appending, creating the file when it does not exist
+    let mut f = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .expect("cannot open the CSV file");
+    // a new or empty file gets the header before its first row
+    let empty = f.metadata().map(|m| m.len() == 0).unwrap_or(true);
+    if empty {
+        writeln!(f, "{CSV_HEADER}").expect("cannot write the CSV header");
+    }
+    // the row itself
+    writeln!(f, "{row}").expect("cannot write the CSV row");
 }
 
         );
