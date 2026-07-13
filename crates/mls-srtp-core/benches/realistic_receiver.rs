@@ -38,15 +38,25 @@
 //!     receiver's stats must match. Any failure means a
 //!     simulator bug and aborts the run before numbers are printed.)
 //!
+//! Beyond the single-run report there are two output modes:
 //!   - --csv <path> appends one row per run, so runs can be collected
 //!     into one table. The row holds the run's configuration and its results.
+//!   - --sweep goes over all 15 payload sizes x 3 granularities x
+//!     {clean, disturbed} configurations, plus the packet-level and
+//!     frame-level K sweeps. It writes every run as one CSV row.
+//!
 //! Run (defaults = dual path, 100 us jitter per path, 1e-4 loss per copy, 2 ms path skew):
 //!   cargo bench --package mls-srtp-core --bench realistic_receiver
 //! Zero-disturbance run for the ideal-benchmark comparison:
 //!   cargo bench --package mls-srtp-core --bench realistic_receiver -- \
 //!       --jitter-ns 0 --loss 0 --single-path
+//! All configurations in one go (see --sweep above):
+//!   cargo bench --package mls-srtp-core --bench realistic_receiver -- --sweep
 
 use std::collections::{BTreeMap, HashMap};
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::Path;
 use std::time::Instant;
 
 use clap::Parser;
@@ -54,10 +64,12 @@ use clap::Parser;
 use mls_srtp_core::granularity::Granularity;
 use mls_srtp_core::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
 use mls_srtp_core::receiver::generation::GenerationScheme;
-use mls_srtp_core::receiver::{ReceiverKeyManager, RecvStats};
+use mls_srtp_core::receiver::{ReceiverKeyManager, RecvDrop, RecvStats};
 use mls_srtp_core::rtp::RTP_HEADER_LEN;
-use mls_srtp_core::sim::network::{disturb, LossModel, NetworkConfig, PathConfig};
-use mls_srtp_core::sim::sender::{SimulatedSender, StreamModel, FRAME_PERIOD, GCM_TAG_LEN, START_TS};
+use mls_srtp_core::sim::network::{disturb, LossModel, NetworkConfig, NetworkStats, PathConfig};
+use mls_srtp_core::sim::sender::{
+    SimulatedSender, StreamModel, FPS, FRAME_BYTES, FRAME_PERIOD, GCM_TAG_LEN, START_TS,
+};
 
 /// SSRC of the simulated stream.
 const SSRC: u32 = 0xFEED_F00D;
@@ -156,6 +168,15 @@ struct Args {
     /// this file
     #[arg(long)]
     csv: Option<String>,
+
+    /// to run the sweep across all granularities in clean and disturbed conditions,
+    /// plus the packet-level and frame-level K sweeps. The per-run flags
+    /// (--granularity, --payload, --key-window, ...) are ignored, except
+    /// --packets, --seed and --warmup, which apply to every run, and the
+    /// network flags (--jitter-ns, --loss, --skew-ns), which define the
+    /// disturbed condition. Writes every run to --csv.
+    #[arg(long)]
+    sweep: bool,
 
     /// hidden flag passed by `cargo bench` (ignored)
     #[arg(long, hide = true)]
@@ -622,7 +643,6 @@ fn run(cfg: &RunConfig) -> Outcome {
     }
 }
 
-
 /// Prints the full single-run report.
 fn print_report(cfg: &RunConfig, out: &Outcome) {
     println!("== Realistic Receiver Report ==");
@@ -890,13 +910,197 @@ fn append_csv(path: &str, row: &str) {
     writeln!(f, "{row}").expect("cannot write the CSV row");
 }
 
+// ----------------------------------------------------------------------
+// The sweep: every configuration in one pass
+// ----------------------------------------------------------------------
+
+/// The payload sizes of the sweep: the same 15 sizes as the ideal
+/// benchmark's PAYLOAD_SIZES (granularity_throughput_ideal.rs), so the
+/// realistic figures are directly comparable to the ideal ones.
+const SWEEP_PAYLOADS: &[usize] = &[
+    16, 32, 40, 64, 128, 160, 256, 512, 800, 1024, 1200, 1424, 2048, 4096, 8924,
+];
+
+/// The packet-level K values of the K sweep.
+const PACKET_K_SWEEP: &[usize] = &[4, 8, 16, 24, 32, 64, 128, 256, 400, 448, 456, 512];
+
+/// The frame-level K values of the K sweep. Frame-level lateness is 0 or
+/// 1 generations, so the interesting step is K=1 to K=2.
+const FRAME_K_SWEEP: &[usize] = &[1, 2, 3, 4];
+
+/// How many packet positions the disturbance can make a packet late at
+/// this payload size. The worst case in time is one skew plus one jitter span
+/// (an A-copy is lost and its B-copy draws maximal jitter). Dividing by the
+/// gap between two consecutive send times turns that time into positions.
+/// The gap shrinks with the payload (one frame's bytes split into more,
+/// faster packets), so the same disturbance covers more positions at
+/// smaller payloads. The division uses the SMALLEST gap the sender can
+/// produce (send_ns truncates to whole nanoseconds, so a gap can be one
+/// ns shorter than the ideal spacing) and rounds up, so the result never
+/// understates the worst case.
+fn lateness_positions(payload: usize, jitter_ns: u64, skew_ns: u64) -> u64 {
+    let ppf = (FRAME_BYTES / payload).max(1) as u64;
+    // integer division rounds down, giving exactly the smallest gap
+    let min_gap_ns = 1_000_000_000 / (FPS * ppf);
+    (skew_ns + jitter_ns).div_ceil(min_gap_ns)
+}
+
+/// One configuration of the payload sweep. facility=true is the disturbed
+/// condition, facility=false is the clean condition (single path, no
+/// jitter, no loss).
+///
+/// The key window K and the replay window both reject packets by how
+/// many positions they arrive behind, and the disturbance makes packets
+/// late by a fixed amount of TIME. A smaller payload means more packets
+/// per millisecond, so the same disturbance pushes packets more
+/// positions behind. With both limits fixed at the default 512, the
+/// small-payload runs would mostly measure those limits dropping late
+/// packets, not the decryption cost. Both limits are therefore set to
+/// exactly what covers the worst lateness the disturbance can cause at
+/// this payload size:
+///   - the replay window counts lateness in packets no matter the
+///     granularity
+///   - K grows above its default 512 only at packet granularity, where
+///     one generation is one packet. A ring of K keys covers a packet at most K-1
+///     positions behind, so K is set to the worst lateness plus one. At frame and epoch
+///     granularity a late packet is at most one generation behind, so
+///     the default K of 512 always suffices.
+fn sweep_cfg(granularity: Granularity, payload: usize, facility: bool, args: &Args) -> RunConfig {
+
+    // the network of this run
+    let (jitter_ns, loss, skew_ns, single_path) = if facility {
+        (args.jitter_ns, args.loss, args.skew_ns, false)
+    } else {
+        (0, 0.0, 0, true)
+    };
+
+    // how many positions behind this network can push a packet
+    // (for replay-window and key-window scaling)
+    let worst_lateness = lateness_positions(payload, jitter_ns, skew_ns);
+
+    // a ring of K keys covers a packet at most K-1 positions behind, so
+    // covering worst_lateness takes one more. Only packet granularity
+    // needs the scaling.
+    let key_window = if matches!(granularity, Granularity::Packet) {
+        ((worst_lateness + 1).max(512)) as usize
+    } else {
+        512
+    };
+
+    RunConfig {
+        granularity,
+        payload,
+        packets: args.packets,
+        jitter_ns,
+        loss,
+        skew_ns,
+        single_path,
+        key_window,
+        // the default
+        seek_cap: 4096,
+        replay_window: worst_lateness.max(512).min(LIBSRTP_REPLAY_MAX),
+        // same seed for every run, so all runs of a sweep and reruns of
+        // the same sweep produce identical counts
+        seed: args.seed,
+        warmup: args.warmup,
+    }
+}
+
+/// Runs every configuration and writes one CSV row per run:
+///   - the payload sweep: every granularity at every SWEEP_PAYLOADS size,
+///     in the clean and in the disturbed condition (90 runs),
+///   - the packet-level K sweep at 1424 B disturbed (12 runs),
+///   - the frame-level K sweep at 1424 B disturbed (4 runs).
+fn sweep(args: &Args) {
+
+    // the CSV path
+    let csv_path = args.csv.clone().unwrap_or_else(|| {
+        concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/benches/results/realistic_receiver/raw.csv"
+        )
+        .to_string()
+    });
+
+    // the directory must exist before the file can be created
+    if let Some(dir) = Path::new(&csv_path).parent() {
+        std::fs::create_dir_all(dir).expect("cannot create the CSV's directory");
+    }
+
+    // the header line goes in first, every run below appends one row
+    std::fs::write(&csv_path, format!("{CSV_HEADER}\n")).expect("cannot start the CSV file");
+
+    // building the whole run list up front, so progress can be shown as i/total
+    let mut runs: Vec<(&'static str, RunConfig)> = Vec::new();
+
+    // the payload sweep: every granularity at every payload size, clean
+    // (facility=false) and disturbed (facility=true)
+    for &granularity in &[Granularity::EpochOnly, Granularity::Frame, Granularity::Packet] {
+        for &payload in SWEEP_PAYLOADS {
+            for &facility in &[false, true] {
+                runs.push(("payload", sweep_cfg(granularity, payload, facility, args)));
+            }
+        }
+    }
+    // the packet-level K sweep: the disturbed 1424 B configuration with only K varied
+    for &k in PACKET_K_SWEEP {
+        let mut cfg = sweep_cfg(Granularity::Packet, 1424, true, args);
+        cfg.key_window = k;
+        runs.push(("k_packet", cfg));
+    }
+    // the frame-level K sweep: same idea at frame granularity
+    for &k in FRAME_K_SWEEP {
+        let mut cfg = sweep_cfg(Granularity::Frame, 1424, true, args);
+        cfg.key_window = k;
+        runs.push(("k_frame", cfg));
+    }
+
+    // how many runs the sweep has, and when it started running
+    let total = runs.len();
+    let started = Instant::now();
+    for (idx, (group, cfg)) in runs.iter().enumerate() {
+        // the measurement itself
+        let out = run(cfg);
+        // one CSV row per run, appended as soon as the run finishes
+        append_csv(&csv_path, &csv_row(group, cfg, &out));
+        // printing the finished run: its position in the sweep, its
+        // configuration, and its main results
+        println!(
+            "[{:>3}/{total}] {:<8} {:<6} {:>5} B {} K={:<5} replay={:<5} mean={:.1} ns p99.9={} ns {:.2} Gbps undecrypted={:.2e}",
+            idx + 1,
+            group,
+            gran_label(cfg.granularity),
+            cfg.payload,
+            if cfg.single_path { "clean   " } else { "facility" },
+            cfg.key_window,
+            cfg.replay_window,
+            out.mean_ns,
+            out.p999,
+            out.gbps,
+            out.undecrypted,
         );
-/// Entry point. Two modes: --sweep runs the whole measurement grid and
+        // flushing
+        std::io::stdout().flush().ok();
+    }
+    println!(
+        "sweep done: {total} runs in {:.1} min -> {csv_path}",
+        started.elapsed().as_secs_f64() / 60.0
+    );
+}
+
+/// Entry point. Two modes: --sweep runs every configuration and
 /// exports to a CSV, everything else is one run of one configuration with the
 /// report printed.
 fn main() {
     // the command-line flags, with defaults for everything not given
     let args = Args::parse();
+
+    // sweep mode: it replaces the per-run flags, so nothing of the
+    // single-run path below applies
+    if args.sweep {
+        sweep(&args);
+        return;
+    }
 
     // single-run mode: the flags become the one configuration to measure
     let cfg = RunConfig {
@@ -921,8 +1125,8 @@ fn main() {
     // the full human-readable report on stdout
     print_report(&cfg, &out);
 
-    // a single run appends to tahe CSV when asked
+    // a single run appends to the CSV when asked
     if let Some(path) = &args.csv {
-        append_csv(path, &csv_row("single", &cfg, &out, 1, screen_ok(&out)));
+        append_csv(path, &csv_row("single", &cfg, &out));
     }
 }
