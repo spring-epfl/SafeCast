@@ -948,6 +948,15 @@ const FRAME_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 16, 32, 64, 128, 256, 512];
 /// space between them.
 const N_SWEEP: &[u32] = &[2, 4, 8, 16, 32, 64, 128, 256, 455, 512, 1024, 1820];
 
+/// How many times the sweep measures each configuration. Only the
+/// attempt with the smallest p99.9 (ties broken by the smaller mean)
+/// reaches the CSV. An OS interruption can only make calls slower, so
+/// the attempt with the smallest tail is the least-disturbed one.
+/// This matters because the measured calls are only a few hundred ns:
+/// one brief OS pause delays a few hundred of the million calls, which
+/// leaves the mean untouched but lands exactly in the slowest 0.1% that
+/// the p99.9 reports.
+const SWEEP_ATTEMPTS: usize = 3;
 
 /// How many packet positions the disturbance can make a packet late at
 /// this payload size. The worst case in time is one skew plus one jitter span
@@ -1106,8 +1115,19 @@ fn sweep(args: &Args) {
     let total = runs.len();
     let started = Instant::now();
     for (idx, (group, cfg)) in runs.iter().enumerate() {
-        // the measurement itself
-        let out = run(cfg);
+        // the measurement itself, SWEEP_ATTEMPTS times, keeping the
+        // attempt with the smallest p99.9 (see the constant for why)
+        let mut out = run(cfg);
+        for _ in 1..SWEEP_ATTEMPTS {
+            let again = run(cfg);
+            assert_eq!(
+                again.recv, out.recv,
+                "same config and seed produced different counts across attempts"
+            );
+            if (again.p999, again.mean_ns) < (out.p999, out.mean_ns) {
+                out = again;
+            }
+        }
         // one CSV row per run, appended as soon as the run finishes
         append_csv(&csv_path, &csv_row(group, cfg, &out));
         // printing the finished run: its position in the sweep, its
