@@ -178,6 +178,12 @@ struct Args {
     #[arg(long)]
     sweep: bool,
 
+    /// runs only one part of the sweep: payload, k_packet or k_frame.
+    /// The CSV keeps the other parts' rows and only this part's rows
+    /// are replaced
+    #[arg(long)]
+    sweep_group: Option<String>,
+
     /// hidden flag passed by `cargo bench` (ignored)
     #[arg(long, hide = true)]
     bench: bool,
@@ -189,16 +195,24 @@ fn parse_granularity(s: &str) -> Granularity {
         "epoch" => Granularity::EpochOnly,
         "frame" => Granularity::Frame,
         "packet" => Granularity::Packet,
-        other => panic!("unknown granularity {other:?} (use epoch, frame or packet)"),
+        other => {
+            // "every64" = one key per 64 consecutive packets
+            if let Some(n) = other.strip_prefix("every").and_then(|n| n.parse().ok()) {
+                Granularity::EveryN(n)
+            } else {
+                panic!("unknown granularity {other:?} (use epoch, frame, packet or everyN)")
+            }
+        }
     }
 }
 
 /// The granularity's name, as printed in reports and CSV rows.
-fn gran_label(g: Granularity) -> &'static str {
+fn gran_label(g: Granularity) -> String {
     match g {
-        Granularity::EpochOnly => "epoch",
-        Granularity::Frame => "frame",
-        Granularity::Packet => "packet",
+        Granularity::EpochOnly => "epoch".to_string(),
+        Granularity::Frame => "frame".to_string(),
+        Granularity::Packet => "packet".to_string(),
+        Granularity::EveryN(n) => format!("every{n}"),
     }
 }
 
@@ -922,11 +936,18 @@ const SWEEP_PAYLOADS: &[usize] = &[
 ];
 
 /// The packet-level K values of the K sweep.
-const PACKET_K_SWEEP: &[usize] = &[4, 8, 16, 24, 32, 64, 128, 256, 400, 448, 456, 512];
+const PACKET_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 16, 24, 32, 64, 128, 256, 400, 448, 456, 512];
 
 /// The frame-level K values of the K sweep. Frame-level lateness is 0 or
 /// 1 generations, so the interesting step is K=1 to K=2.
-const FRAME_K_SWEEP: &[usize] = &[1, 2, 3, 4];
+const FRAME_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 16, 32, 64, 128, 256, 512];
+
+/// The every-n sweep: one key per N consecutive packets, at 1424 B under
+/// the disturbed network. Packet-level (N=1) and frame-level (N=3,640)
+/// already exist as their own granularities, so we cover here the
+/// space between them.
+const N_SWEEP: &[u32] = &[2, 4, 8, 16, 32, 64, 128, 256, 455, 512, 1024, 1820];
+
 
 /// How many packet positions the disturbance can make a packet late at
 /// this payload size. The worst case in time is one skew plus one jitter span
@@ -1009,8 +1030,8 @@ fn sweep_cfg(granularity: Granularity, payload: usize, facility: bool, args: &Ar
 /// Runs every configuration and writes one CSV row per run:
 ///   - the payload sweep: every granularity at every SWEEP_PAYLOADS size,
 ///     in the clean and in the disturbed condition (90 runs),
-///   - the packet-level K sweep at 1424 B disturbed (12 runs),
-///   - the frame-level K sweep at 1424 B disturbed (4 runs).
+///   - the packet-level K sweep at 1424 B disturbed (15 runs),
+///   - the frame-level K sweep at 1424 B disturbed (11 runs).
 fn sweep(args: &Args) {
 
     // the CSV path
@@ -1027,8 +1048,25 @@ fn sweep(args: &Args) {
         std::fs::create_dir_all(dir).expect("cannot create the CSV's directory");
     }
 
-    // the header line goes in first, every run below appends one row
-    std::fs::write(&csv_path, format!("{CSV_HEADER}\n")).expect("cannot start the CSV file");
+    // A full sweep starts the file fresh with just the header. A partial
+    // sweep (--sweep-group) instead keeps every existing row of the other
+    // parts, so only the requested part's rows get replaced below
+    let mut fresh = format!("{CSV_HEADER}\n");
+    if let Some(group) = &args.sweep_group {
+        assert!(
+            ["payload", "k_packet", "k_frame"].contains(&group.as_str()),
+            "unknown sweep group {group:?} (use payload, k_packet or k_frame)"
+        );
+        if let Ok(existing) = std::fs::read_to_string(&csv_path) {
+            for line in existing.lines().skip(1) {
+                if !line.starts_with(&format!("{group},")) {
+                    fresh.push_str(line);
+                    fresh.push('\n');
+                }
+            }
+        }
+    }
+    std::fs::write(&csv_path, fresh).expect("cannot start the CSV file");
 
     // building the whole run list up front, so progress can be shown as i/total
     let mut runs: Vec<(&'static str, RunConfig)> = Vec::new();
@@ -1054,8 +1092,17 @@ fn sweep(args: &Args) {
         cfg.key_window = k;
         runs.push(("k_frame", cfg));
     }
+    // the every-n sweep: the granularities between packet and frame level
+    for &n in N_SWEEP {
+        runs.push(("n_sweep", sweep_cfg(Granularity::EveryN(n), 1424, true, args)));
+    }
 
     // how many runs the sweep has, and when it started running
+    // a partial sweep runs only the requested part's configurations
+    if let Some(group) = &args.sweep_group {
+        runs.retain(|(g, _)| g == group);
+    }
+
     let total = runs.len();
     let started = Instant::now();
     for (idx, (group, cfg)) in runs.iter().enumerate() {
