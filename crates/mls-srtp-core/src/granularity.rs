@@ -7,6 +7,8 @@
 //!   - [`Granularity::Frame`]: one key per video frame (rekey when the RTP
 //!     timestamp changes, since all packets of a frame share a timestamp).
 //!   - [`Granularity::Packet`]: one key per packet (rekey every packet).
+//!   - [`Granularity::EveryN`]: one key per n consecutive packets (rekey
+//!     when the packet count crosses a multiple of n).
 //!
 //! [`RekeyingStream`] ties a libsrtp session, a [`StreamRatchet`], and a
 //! granularity together. It advances the ratchet and installs the next
@@ -44,6 +46,11 @@ pub enum Granularity {
     Frame,
     /// One key per packet: rekey on every packet.
     Packet,
+    /// One key per `n` consecutive packets: rekey when the packet count
+    /// crosses a multiple of `n`. Packet-level keying is the n = 1 case,
+    /// frame-level the n = packets-per-frame case
+    /// everything between.
+    EveryN(u32),
 }
 
 /// A single-SSRC SRTP stream that rekeys at the boundary set by its
@@ -65,6 +72,8 @@ pub struct RekeyingStream {
     /// Whether at least one packet has been processed (so the first packet does
     /// not trigger a spurious rekey).
     started: bool,
+    /// Packets processed so far, for the every-n-packets boundary rule.
+    packet_count: u64,
 }
 
 impl RekeyingStream {
@@ -108,6 +117,7 @@ impl RekeyingStream {
             installed_gen: 0,
             last_ts: None,
             started: false,
+            packet_count: 0,
         };
 
         // installing generation 0 over the throwaway key
@@ -153,6 +163,9 @@ impl RekeyingStream {
             Granularity::Packet => self.started,
             // frame-level rekeys when the timestamp changes (a new frame)
             Granularity::Frame => self.started && self.last_ts != Some(ts),
+            // every-n rekeys when this packet's number is a multiple of n
+            // (the first packet of each n-packet generation)
+            Granularity::EveryN(n) => self.started && self.packet_count % n as u64 == 0,
         };
 
         // if so, ratcheting forward and install the next generation's key
@@ -165,6 +178,9 @@ impl RekeyingStream {
 
         // past the first packet now, so future packets can trigger a rekey
         self.started = true;
+
+        // one more packet processed, for the every-n boundary rule
+        self.packet_count += 1;
     }
 
     /// Reads the 32-bit RTP timestamp from a packet's fixed header (bytes 4..8,

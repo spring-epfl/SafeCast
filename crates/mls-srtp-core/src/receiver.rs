@@ -261,6 +261,16 @@ impl ReceiverKeyManager {
                 };
                 (g, Some(index))
             }
+            // every-n: like packet-level, except n consecutive indexes share
+            // one generation, so the recovered offset is divided by n
+            GenerationScheme::EveryN { base, n } => {
+                let index = self.recovery.recover(seq);
+                let Some(offset) = index.checked_sub(base) else {
+                    self.stats.drops_behind += 1;
+                    return Err(RecvDrop::BehindWindow);
+                };
+                (offset / n as u64, Some(index))
+            }
         };
 
         // --- phase 2: classify g against the window [frontier-K+1, frontier] ---

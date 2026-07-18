@@ -118,3 +118,14 @@ fn packet_level_advances_every_packet() {
         "packet-level must reach generation totalPackets-1"
     );
 }
+
+/// One key per n consecutive packets: with 4 frames x 5 packets = 20 packets
+/// and n = 6, the last packet (number 19) belongs to generation 19/6 = 3.
+#[test]
+fn every_n_advances_once_per_n_packets() {
+    let final_gen = run_round_trip(Granularity::EveryN(6));
+    assert_eq!(
+        final_gen, 3,
+        "every-6 keying must reach generation floor(19/6) = 3"
+    );
+}

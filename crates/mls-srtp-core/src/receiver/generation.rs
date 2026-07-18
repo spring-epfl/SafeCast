@@ -53,6 +53,14 @@ pub enum GenerationScheme {
         /// Extended index of the epoch's first packet.
         base: u64,
     },
+    /// One key per `n` consecutive packets: `g = (extended index - base) / n`,
+    /// with the extended index recovered exactly as in the Packet scheme.
+    EveryN {
+        /// Extended index of the epoch's first packet.
+        base: u64,
+        /// Packets covered by one key.
+        n: u32,
+    },
 }
 
 impl GenerationScheme {
@@ -73,6 +81,7 @@ impl GenerationScheme {
                 frame_period,
             },
             Granularity::Packet => GenerationScheme::Packet { base },
+            Granularity::EveryN(n) => GenerationScheme::EveryN { base, n },
         }
     }
 }
