@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="940" height="580" viewBox="270 0 940 580" xmlns="http://www.w3.org/2000/svg"
+     font-family="'Times New Roman', Times, serif" fill="#000">
+
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
+    </marker>
+    <marker id="arrsm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
+    </marker>
+    <clipPath id="delcell"><rect x="852" y="502" width="60" height="30"/></clipPath>
+  </defs>
+
+  <!-- MLS -->
+  <rect x="675" y="64" width="130" height="54" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="740" y="98" text-anchor="middle" font-size="22" font-weight="bold">MLS</text>
+
+  <!-- exporter arrow -->
+  <line x1="740" y1="118" x2="740" y2="166" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="752" y="147" font-size="15" xml:space="preserve">MLS-Exporter(SSRC)</text>
+
+  <!-- shared ratchet -->
+  <rect x="550" y="168" width="380" height="152" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="740" y="194" text-anchor="middle" font-size="17" font-weight="bold">SRTP key ratchet</text>
+
+  <g font-size="18">
+    <text x="665" y="244" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">S</tspan><tspan dy="4" font-size="13" font-style="italic">0</tspan></text>
+    <text x="772" y="244" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">S</tspan><tspan dy="4" font-size="13" font-style="italic">1</tspan></text>
+    <text x="850" y="244">&#8943;</text>
+  </g>
+  <line x1="687" y1="239" x2="750" y2="239" stroke="#000" stroke-width="1.3" marker-end="url(#arrsm)"/>
+  <line x1="794" y1="239" x2="826" y2="239" stroke="#000" stroke-width="1.3" marker-end="url(#arrsm)"/>
+  <text x="718" y="223" text-anchor="middle" font-size="14">HKDF</text>
+
+  <line x1="665" y1="254" x2="665" y2="288" stroke="#000" stroke-width="1.3" marker-end="url(#arrsm)"/>
+  <line x1="772" y1="254" x2="772" y2="288" stroke="#000" stroke-width="1.3" marker-end="url(#arrsm)"/>
+  <text x="677" y="276" font-size="14">HKDF</text>
+
+  <g font-size="15.5">
+    <text x="665" y="306" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">0</tspan></text>
+    <text x="772" y="306" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">1</tspan></text>
+  </g>
+
+  <!-- keys to both endpoints -->
+  <line x1="552" y1="320" x2="552" y2="395" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="540" y="364" text-anchor="end" font-size="15.5" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan></text>
+
+  <line x1="920" y1="320" x2="920" y2="395" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="932" y="364" font-size="15.5" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan></text>
+
+  <!-- receiver: g from header, back up into the ratchet -->
+  <line x1="880" y1="396" x2="880" y2="322" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="868" y="352" text-anchor="end" font-size="15.5" xml:space="preserve">frame-level: <tspan font-style="italic">g</tspan> = (ts &#8722; ts<tspan dy="3" font-size="11" font-style="italic">0</tspan><tspan dy="-3">) / frame period</tspan></text>
+  <text x="868" y="374" text-anchor="end" font-size="15.5" xml:space="preserve">per-packet: <tspan font-style="italic">g</tspan> = idx &#8722; base</text>
+
+  <!-- lane headers -->
+  <text x="310" y="386" font-size="17" font-weight="bold">Sender</text>
+  <text x="1170" y="386" text-anchor="end" font-size="17" font-weight="bold">Receiver</text>
+
+  <!-- SRTP encrypt -->
+  <rect x="310" y="396" width="350" height="116" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="485" y="422" text-anchor="middle" font-size="17" font-weight="bold">SRTP encrypt</text>
+  <g font-size="15.5">
+    <text x="485" y="456" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">c</tspan><tspan> = AES-GCM(</tspan><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan><tspan dy="-3.5">, IV, payload, header)</tspan></text>
+    <text x="485" y="488" text-anchor="middle" xml:space="preserve">IV derived from header</text>
+  </g>
+
+  <!-- wire -->
+  <line x1="660" y1="460" x2="819" y2="460" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="738" y="442" text-anchor="middle" font-size="15.5" xml:space="preserve">hdr &#8214; <tspan font-style="italic">c</tspan></text>
+
+  <!-- SRTP decrypt -->
+  <rect x="820" y="396" width="350" height="150" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="995" y="422" text-anchor="middle" font-size="17" font-weight="bold">SRTP decrypt</text>
+  <g font-size="15.5">
+    <text x="995" y="456" text-anchor="middle" xml:space="preserve">payload = AES-GCM<tspan dy="-6" font-size="11">&#8722;1</tspan><tspan dy="6">(</tspan><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan><tspan dy="-3.5">, IV, </tspan><tspan font-style="italic">c</tspan><tspan>, header)</tspan></text>
+    <text x="995" y="484" text-anchor="middle" xml:space="preserve">IV recomputed from header</text>
+  </g>
+
+  <!-- key window -->
+  <rect x="912" y="502" width="210" height="30" fill="none" stroke="#000" stroke-width="1.3"/>
+  <line x1="982" y1="502" x2="982" y2="532" stroke="#000" stroke-width="1.3"/>
+  <line x1="1052" y1="502" x2="1052" y2="532" stroke="#000" stroke-width="1.3"/>
+  <rect x="852" y="502" width="60" height="30" fill="none" stroke="#999" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <g clip-path="url(#delcell)" stroke="#ccc" stroke-width="1">
+    <line x1="842" y1="536" x2="880" y2="498"/>
+    <line x1="852" y1="536" x2="890" y2="498"/>
+    <line x1="862" y1="536" x2="900" y2="498"/>
+    <line x1="872" y1="536" x2="910" y2="498"/>
+    <line x1="882" y1="536" x2="920" y2="498"/>
+    <line x1="892" y1="536" x2="930" y2="498"/>
+    <line x1="902" y1="536" x2="940" y2="498"/>
+  </g>
+  <g font-size="13">
+    <text x="882" y="521" text-anchor="middle" fill="#999" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3" font-size="10" font-style="italic">g&#8722;3</tspan></text>
+    <text x="947" y="521" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3" font-size="10" font-style="italic">g&#8722;2</tspan></text>
+    <text x="1017" y="521" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3" font-size="10" font-style="italic">g&#8722;1</tspan></text>
+    <text x="1087" y="521" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3" font-size="10" font-style="italic">g</tspan></text>
+  </g>
+  <path d="M 805 76 C 874 56, 874 126, 805 106" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="884" y="96" font-size="15" xml:space="preserve">per-epoch rekey</text>
+</svg>
