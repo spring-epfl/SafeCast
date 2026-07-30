@@ -1,1 +1,0 @@
-{"group_id":"aes_gcm_reuse_ctx","function_id":"encrypt","value_str":"1024","throughput":{"Bytes":1040},"full_id":"aes_gcm_reuse_ctx/encrypt/1024","directory_name":"aes_gcm_reuse_ctx/encrypt/1024","title":"aes_gcm_reuse_ctx/encrypt/1024"}

@@ -1,1 +1,0 @@
-{"group_id":"aes_gcm_reuse_ctx","function_id":"encrypt","value_str":"16384","throughput":{"Bytes":16400},"full_id":"aes_gcm_reuse_ctx/encrypt/16384","directory_name":"aes_gcm_reuse_ctx/encrypt/16384","title":"aes_gcm_reuse_ctx/encrypt/16384"}
