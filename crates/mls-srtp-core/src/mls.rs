@@ -45,7 +45,7 @@ pub const SRTP_KEY_MATERIAL_LEN: usize = AES_128_GCM_KEY_LEN + AES_128_GCM_SALT_
 /// This allows receivers to compute the expected SSRC for any sender
 /// without out-of-band signaling.
 ///
-/// TODO: this assumes one SRTP stream per sender.
+/// Note: this assumes one SRTP stream per sender (one SSRC per identity).
 pub fn ssrc_from_identity(identity: &str) -> u32 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     identity.hash(&mut hasher);

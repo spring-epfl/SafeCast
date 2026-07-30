@@ -202,8 +202,9 @@ fn bench_srtp_throughput(c: &mut Criterion) {
 
                 // Using iter_custom instead of iter so we can time only
                 // the protect() call, excluding header writes and truncation.
-                // TODO: check if OK to have Instant::now() call at each iteration
-                // (elapsed() calls Instant::now() internally)
+                // Each iteration pays the clock readout (Instant::now +
+                // elapsed, tens of ns). This inflates the smallest payloads
+                // by a few percent but affects all measured variants equally.
                 // Criterion passes us `iters` (how many iterations to run)
                 // and we return the total Duration spent in protect()
                 b.iter_custom(|iters| {

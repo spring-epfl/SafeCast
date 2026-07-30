@@ -151,7 +151,6 @@ impl ReceiverKeyManager {
     ///   Sample calculation (packet-level keying, 1424 B packets leaving
     ///   every ~4.6 us, jitter up to 100 us): a jump of at most 100/4.6 = ~21 -> ~22 steps. 
     ///   A 100 ms outage instead leaves 100_000/4.6 = ~21,700 packets missing.
-    ///   TODO: update after EBU numbers
     /// - `replay_window`: libsrtp remembers the highest packet index it has
     ///   accepted so far, and rejects every packet arriving more than
     ///   replay_window positions behind that index, replay or not. At

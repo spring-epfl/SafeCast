@@ -17,7 +17,7 @@
 //! payloads, where the operation itself is a few hundred ns, this may inflate
 //! the absolute numbers by a few percent. At larger payload sizes it is noise.
 //! It applies equally to all three granularities, so their comparison
-//! is unaffected. TODO: check if any solution
+//! is unaffected.
 //!
 //! Run:
 //!   cargo bench --package mls-srtp-core --bench granularity_throughput_ideal

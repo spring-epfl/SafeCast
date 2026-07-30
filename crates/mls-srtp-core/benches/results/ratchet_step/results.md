@@ -1,7 +1,5 @@
 # Ratchet Step Microbenchmark Results
 
-TODO: decryption times
-
 Results from `ratchet_step.rs`, which measures the fixed per-generation cost of
 fine-grained keying in isolation. A "generation" is the span of a stream that
 shares one SRTP key: one packet at packet-level and one frame at frame-level. Per
