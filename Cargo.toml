@@ -17,10 +17,15 @@ openmls_traits = { path = "openmls/traits" }
 # OpenMLS Delivery Service library (types for DS interaction)
 ds-lib = { path = "openmls/delivery-service/ds-lib" }
 
-# SRTP (Rust bindings for libsrtp): our fork of the high-level `srtp` crate,
-# which adds Session::inplace_rekey (wrapping the libsrtp fork's
-# srtp_inplace_rekey).
-srtp = { git = "https://github.com/ArmanKolozyan/srtp.git" }
+# SRTP (Rust bindings for libsrtp): our patched copy of the high-level `srtp`
+# crate (vendored in vendor/srtp), which adds Session::inplace_rekey
+# (wrapping the patched libsrtp's srtp_inplace_rekey). It builds against
+# vendor/srtp2-sys, our patched copy of the low-level bindings, which
+# bundles libsrtp v2.8.0 instead of v2.3.0 (v2.3.0 had a SET_TAG bug
+# costing ~120 ns on every protect() call: see
+# crates/mls-srtp-core/benches/protect_unprotect_asymmetry/) and adds
+# srtp_inplace_rekey for the fine-grained frame/packet rekeying.
+srtp = { path = "vendor/srtp" }
 
 # HTTP server
 actix-web = "4"
@@ -41,12 +46,3 @@ hex = "0.4"
 base64 = "0.22"
 socket2 = { version = "0.5", features = ["all"] }
 clap = { version = "4", features = ["derive"] }
-
-# Overriding srtp2-sys with our fork that bundles libsrtp v2.8.0
-# (original srtp2-sys bundled v2.3.0 which had a SET_TAG bug causing
-# ~120 ns overhead on every protect() call: see
-# crates/mls-srtp-core/benches/protect_unprotect_asymmetry/)
-[patch.crates-io]
-# Our fork also adds srtp_inplace_rekey to libsrtp (via the libsrtp submodule
-# fork) for the fine-grained frame/packet rekey functionality.
-srtp2-sys = { git = "https://github.com/ArmanKolozyan/srtp2-sys.git" }

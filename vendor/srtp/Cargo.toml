@@ -1,0 +1,24 @@
+[package]
+name = "srtp"
+version = "0.7.0"
+edition = "2018"
+description = "Rusty wrapper for libsrtp2"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# our patched srtp2-sys: bundles libsrtp v2.8.0 with srtp_inplace_rekey
+srtp2-sys = { path = "../srtp2-sys" }
+paste = "1.0"
+foreign-types = "0.5"
+thiserror = "1.0"
+libc = "0.2"
+bytes = {version = "0.6", optional = true}
+log = {version = "0.4", optional = true}
+openssl = {version = "0.10", optional = true}
+
+[features]
+default = ["bytes", "log", "enable-openssl", "build-libsrtp"]
+skip-linking = ["srtp2-sys/skip-linking"]
+build-libsrtp = ["srtp2-sys/build"]
+enable-openssl = ["openssl", "srtp2-sys/enable-openssl"]
+build-openssl = ["enable-openssl", "srtp2-sys/build-openssl"]

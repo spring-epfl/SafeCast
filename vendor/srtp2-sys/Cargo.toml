@@ -1,0 +1,25 @@
+[package]
+name = "srtp2-sys"
+version = "3.0.2"
+edition = "2018"
+links = "srtp2"
+build = "build.rs"
+description = "Binding for libsrtp2"
+license = "BSD-3-Clause"
+
+[dependencies]
+openssl-sys = { version = "0.9", optional = true }
+
+[build-dependencies]
+bindgen = "0.55"
+pkg-config = "0.3"
+make-cmd = { version = "0.1.0", optional = true }
+
+[target.'cfg(target_env = "msvc")'.build-dependencies]
+vcpkg = "0.2"
+
+[features]
+skip-linking = []
+build = ["make-cmd"]
+enable-openssl = ["openssl-sys"]
+build-openssl = ["enable-openssl", "openssl-sys/vendored"]
