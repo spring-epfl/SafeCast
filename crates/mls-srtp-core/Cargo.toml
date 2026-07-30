@@ -62,11 +62,6 @@ path = "benches/realistic_receiver.rs"
 harness = false
 
 [[bench]]
-name = "srtp_throughput_manual"
-path = "benches/srtp_throughput/srtp_throughput_manual.rs"
-harness = false
-
-[[bench]]
 name = "srtp_throughput_criterion"
 path = "benches/srtp_throughput/srtp_throughput_criterion.rs"
 harness = false
