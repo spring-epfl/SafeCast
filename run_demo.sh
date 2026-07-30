@@ -4,8 +4,9 @@
 #
 #   1. Authentication Service (AS)   - port 8001
 #   2. Delivery Service (DS)         - port 8080
-#   3. Sender (creator)              - creates MLS group, sends SRTP
-#   4. Receiver(s) (joiners)         - join MLS group, receive SRTP
+#   3. Creator                       - creates the MLS group, delivers Welcome
+#   4. Sender (joiner)               - joins MLS group, sends SRTP
+#   5. Receiver(s) (joiners)         - join MLS group, receive SRTP
 #
 # Usage:
 #   ./run_demo.sh           # default: 1 sender + 1 receiver
@@ -51,6 +52,11 @@ sleep 1
 PIDS+=($!)
 sleep 1
 
+# -- Starting creator (sets up the MLS group, delivers Welcome) ----------------
+cargo run -p mls-srtp-client -- --mode creator --senders 1 --receivers "$NUM_RECEIVERS" &
+PIDS+=($!)
+sleep 1
+
 # -- Starting receivers (joiners) in background -------------------------------
 RECEIVER_PIDS=()
 for i in $(seq 1 "$NUM_RECEIVERS"); do
@@ -61,8 +67,8 @@ for i in $(seq 1 "$NUM_RECEIVERS"); do
 done
 sleep 2
 
-# -- Starting sender (creator) ------------------------------------------------
-cargo run -p mls-srtp-client -- --mode sender --receivers "$NUM_RECEIVERS"
+# -- Starting sender (joiner) -------------------------------------------------
+cargo run -p mls-srtp-client -- --mode sender
 SENDER_EXIT=$?
 
 # -- Waiting for receivers to finish ------------------------------------------
