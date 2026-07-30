@@ -720,10 +720,19 @@ async fn recv_srtp(
                     }
                 };
 
-                // decrypting the SRTP packet in-place (removing auth tag, decrypting payload)
-                session
-                    .unprotect(&mut pkt_buf)
-                    .expect("SRTP decryption failed");
+                // Decrypting the SRTP packet in-place (removing auth tag, decrypting payload).
+                // When sender and receiver run on the same machine, the OS can
+                // hand the receiver the same multicast packet twice (one copy
+                // delivered directly inside the machine, one sent out via the
+                // network interface and routed back in).
+                // libsrtp's replay protection rejects the second copy with
+                // REPLAY_FAIL, so we just skip that duplicate.
+                if let Err(e) = session.unprotect(&mut pkt_buf) {
+                    if e == srtp::Error::REPLAY_FAIL {
+                        continue;
+                    }
+                    panic!("SRTP decryption failed: {e}");
+                }
 
                 // parsing the decrypted bytes back into an RTP packet structure
                 let rtp = RtpPacket::from_bytes(&pkt_buf).expect("invalid RTP");
