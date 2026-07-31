@@ -62,7 +62,7 @@ fn sample_packet(seq: u16) -> Vec<u8> {
     .to_bytes()
 }
 
-/// After an in-place rekey, `protect`` must produce exactly what an independent
+/// After an in-place rekey, `protect` must produce exactly what an independent
 /// AES-128-GCM encryption with the same session key+salt and the RFC 7714 IV
 /// produces. This pins the cipher rekey and salt install down to the byte.
 #[test]

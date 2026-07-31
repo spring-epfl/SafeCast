@@ -156,7 +156,7 @@ fn rekey_rotates_srtp_keys() {
     // the sender performs a self-update: generates a fresh leaf node,
     // encrypts new path secrets up the tree, and stages the commit.
     // `create_rekey_commit` calls `self_update` + `merge_pending_commit`
-    // internally (see mls.rs) —> the sender advances to the new epoch.
+    // internally (see mls.rs) -> the sender advances to the new epoch.
     let commit = {
         let (ref mut sender_group, ref sender_member) = group[0];
         create_rekey_commit(sender_group, &sender_member.provider, &sender_member.signer)

@@ -247,7 +247,7 @@ fn key_export_different_senders_get_different_keys() {
     let (km1, _, _) = export_srtp_keys(&group[2].0, group[2].1.provider.crypto(), ssrc1);
 
     // different SSRCs produce different key material because the SSRC is
-    // used as the exporter context in `export_secret``
+    // used as the exporter context in `export_secret`
     assert_ne!(km0, km1, "different senders should have different keys");
 
     println!("sender-0 SSRC=0x{ssrc0:08X}: {}", hex::encode(&km0));

@@ -265,7 +265,7 @@ fn late_packet_behind_window_is_clean_keying_loss() {
 ///       packet then fails GCM authentication, and the clone is thrown away,
 ///       so the receiver's real state is untouched
 #[test]
-fn gap_catchup_seek_cap_and_d8() {
+fn gap_catchup_seek_cap_and_forgery() {
     // 170 packets in one frame (frames are irrelevant at packet-level keying,
     // we just need generations 0..=169 to play with)
     let plain: Vec<Vec<u8>> = create_packets(1, 170, 64);
@@ -335,7 +335,8 @@ fn gap_catchup_seek_cap_and_d8() {
     // after all three scenarios, the genuine generation-51 packet still
     // decrypts: nothing above corrupted the receiver's state
     let mut next = cipher[51].clone();
-    rx.unprotect(&mut next).expect("stream must continue after D8 events");
+    rx.unprotect(&mut next)
+        .expect("stream must continue after the gap/forgery events");
 }
 
 /// Test 5: A duplicated packet is rejected by replay protection.
@@ -407,7 +408,7 @@ fn identical_runs_produce_identical_stats() {
 // frame's key and forward again (extra installs).
 // --------------------------------------------------------------------------
 
-/// Test 8: A late packet from the previous frame costs exactly two extra key
+/// Test 7: A late packet from the previous frame costs exactly two extra key
 /// installs: back to the old frame's key, then forward again.
 #[test]
 fn late_frame_packet_flip_flop_costs_two_installs() {

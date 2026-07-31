@@ -265,7 +265,7 @@ fn main() {
     }
 
     // writing final results to JSON file
-    let output_dir = std::path::Path::new("crates/mls-srtp-core/benches/results");
+    let output_dir = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/benches/results"));
     std::fs::create_dir_all(output_dir).expect("failed to create output dir");
     let output_path = output_dir.join("memory_usage.json");
 
