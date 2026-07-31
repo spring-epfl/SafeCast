@@ -18,14 +18,8 @@
 //! It keeps only a single key and advances on every timestamp change. That is
 //! correct for a sender (it emits packets in timestamp order and never
 //! needs an old key again), but it desyncs under reordering. Hence, its
-//! `unprotect` side is a receiver ONLY for in-order delivery,
+//! `unprotect` side is a receiver only for in-order delivery,
 //! needed for specific benchmarks.
-//!
-//! Why keep both decrypt paths: `RekeyingStream::unprotect` isolates the pure
-//! crypto + rekey cost (the floor the throughput figures report), while
-//! `ReceiverKeyManager` adds the window/catch-up bookkeeping that the realistic
-//! simulation measures on top. (And `RekeyingStream` is needed regardless, as
-//! `ReceiverKeyManager` has no `protect`.)
 
 use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;
