@@ -5,12 +5,7 @@
 //! replay check, IV construction, etc.).
 //!
 //! By comparing the results with `srtp_scaling` (which measures the full
-//! `protect()` call), the difference isolates the SRTP overhead:
-//!   SRTP overhead = protect() time − raw AES-GCM time
-//!
-//! Reuses the EVP_CIPHER_CTX across iterations, only reinitializing the IV
-//! each time via encrypt_init(None, None, Some(iv)). This mirrors what
-//! libsrtp2 does per packet in aes_gcm_ossl.c.
+//! `protect()` call), the difference isolates the SRTP overhead.
 //!
 //! Run:
 //!   cargo bench --package mls-srtp-core --bench aes_gcm_baseline
@@ -35,8 +30,8 @@ const AAD: [u8; 12] = [0x03; 12];
 /// AES-128-GCM authentication tag length in bytes (RFC 7714).
 const TAG_LEN: usize = 16;
 
-/// Same payload sizes as the SRTP payload scaling benchmark, ranging from
-/// small audio-like payloads to jumbo-frame video payloads.
+/// Same payload sizes as `srtp_scaling` (the matched SRTP control), ranging
+/// from small audio-like payloads to jumbo-frame video payloads.
 const PAYLOAD_SIZES: &[usize] = &[
     16, 32, 64, 128, 256, 512, 1024, 1424, 2048, 4096, 8192, 8924, 16384,
 ];

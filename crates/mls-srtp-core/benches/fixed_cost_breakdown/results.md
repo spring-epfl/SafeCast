@@ -151,8 +151,8 @@ cargo bench --package mls-srtp-core --bench aes_gcm_baseline
 
 # copy the Criterion estimates this analysis reads:
 for sz in 16 32 64 128 256 512 1024 1424 2048 4096 8192 8924 16384; do
-  mkdir -p payload_scaling_data/protect/$sz/new raw_aes_gcm_data/encrypt/$sz/new
-  cp <repo>/target/criterion/payload_scaling/protect/$sz/new/estimates.json payload_scaling_data/protect/$sz/new/
+  mkdir -p srtp_scaling_data/protect/$sz/new raw_aes_gcm_data/encrypt/$sz/new
+  cp <repo>/target/criterion/srtp_scaling/protect/$sz/new/estimates.json srtp_scaling_data/protect/$sz/new/
   cp <repo>/target/criterion/raw_aes_gcm/encrypt/$sz/new/estimates.json raw_aes_gcm_data/encrypt/$sz/new/
 done
 

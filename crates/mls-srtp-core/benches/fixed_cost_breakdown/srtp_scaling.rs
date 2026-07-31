@@ -1,7 +1,13 @@
-//! Investigation: how does SRTP protection time scale with payload size?
+//! SRTP `protect()` latency across payload sizes: the SRTP half of the
+//! fixed-cost breakdown.
 //!
-//! Tests many payload sizes to map out the time-vs-size curve
-//! and determine the fixed per-packet cost vs. the per-byte cost of AES-GCM.
+//! This is the matched control for `aes_gcm_baseline` (raw AES-GCM over the
+//! same 13 sizes, measured the same way): subtracting the two, and fitting a
+//! `time = fixed + per_byte x size` line to each, splits SRTP's per-packet
+//! cost into a fixed part and a per-byte part and isolates the overhead SRTP
+//! adds over raw AES-GCM. Both series are read by `fixed_cost_breakdown.py`
+//! (this folder); the write-up is `results.md`. This pair explains the shape
+//! of the throughput curves (fig1/fig2) but does not itself feed any figure.
 //!
 //! Run:
 //!   cargo bench --package mls-srtp-core --bench srtp_scaling
@@ -66,11 +72,11 @@ fn setup_mls_group() -> (Vec<u8>, u32) {
 /// Benchmarks SRTP `protect()` for each payload size.
 /// Uses `iter_custom` to time only the protect() call itself,
 /// excluding setup and buffer allocation.
-fn bench_payload_scaling(c: &mut Criterion) {
+fn bench_srtp_scaling(c: &mut Criterion) {
     srtp::ensure_init();
     let (key_material, ssrc) = setup_mls_group();
 
-    let mut group = c.benchmark_group("payload_scaling");
+    let mut group = c.benchmark_group("srtp_scaling");
 
     // using 5 s measurement time per payload size
     group.measurement_time(Duration::from_secs(5));
@@ -136,5 +142,5 @@ fn bench_payload_scaling(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_payload_scaling);
+criterion_group!(benches, bench_srtp_scaling);
 criterion_main!(benches);

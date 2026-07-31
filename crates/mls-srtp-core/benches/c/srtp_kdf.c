@@ -1,14 +1,15 @@
 /*
  * SRTP Key Derivation Function (RFC 3711 §4.3.1)
  *
- * Copy-pasted from libsrtp2's srtp/srtp.c. 
+ * The key_derivation benchmark reports the cost of
+ * the SRTP KDF stage on its own, but inside libsrtp there is no public API 
+ * to invoke just the KDF. Hence, this file carries a callable copy of those functions for the
+ * benchmark to time in isolation.
+ *
+ * Copy-pasted from libsrtp2's srtp/srtp.c.
  * The only change is removing `static` from the
  * function signatures so they are callable from Rust via FFI.
- *
- * These functions use libsrtp2's internal cipher abstraction
- * (srtp_cipher_t, srtp_cipher_set_iv, srtp_cipher_encrypt, etc.)
- * which are compiled into the libsrtp2.a static library and linked
- * automatically via the srtp2-sys crate.
+ * 
  */
 
 #ifdef HAVE_CONFIG_H
@@ -131,11 +132,7 @@ int srtp_kdf_ensure_init(void)
 
 /*
  * Entry point for the Rust benchmark: runs the full SRTP KDF for
- * AES-128-GCM, deriving the same four session keys as
- * srtp_stream_init_keys().
- *
- * key_material must be 30 bytes: master_key (16) || master_salt (12)
- * || 2 zero-padding bytes (to match SRTP_AES_ICM_128_KEY_LEN_WSALT = 30).
+ * AES-128-GCM.
  *
  * Caller must call srtp_kdf_ensure_init() once before the first call.
  */

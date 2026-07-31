@@ -2,7 +2,7 @@
 name = "mls-srtp-core"
 version = "0.1.0"
 edition = "2024"
-description = "Core library for MLS-SRTP: MLS group helpers, RTP packets, SRTP sessions, DS client, multicast"
+description = "Core library for MLS-SRTP: MLS group helpers, key ratchet, keying granularities, RTP packets, SRTP sessions, reorder-capable receiver, network simulation"
 
 [dependencies]
 # seeded RNG for the network simulation (sim::network): ChaCha so the same
@@ -63,12 +63,12 @@ harness = false
 
 [[bench]]
 name = "srtp_scaling"
-path = "benches/payload_scaling/srtp_scaling.rs"
+path = "benches/fixed_cost_breakdown/srtp_scaling.rs"
 harness = false
 
 [[bench]]
 name = "aes_gcm_baseline"
-path = "benches/payload_scaling/aes_gcm_baseline.rs"
+path = "benches/fixed_cost_breakdown/aes_gcm_baseline.rs"
 harness = false
 
 [[bench]]

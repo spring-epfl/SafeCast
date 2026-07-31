@@ -21,8 +21,8 @@ def load_criterion_data(data_dir, group_name):
         data.append((sz, mean_ns))
     return data
 
-# loading data from Criterion output (copied into this results folder)
-srtp_data = load_criterion_data(os.path.join(SCRIPT_DIR, "payload_scaling_data"), "protect")
+# loading data from Criterion output (copied next to this script)
+srtp_data = load_criterion_data(os.path.join(SCRIPT_DIR, "srtp_scaling_data"), "protect")
 raw_gcm_data = load_criterion_data(os.path.join(SCRIPT_DIR, "raw_aes_gcm_data"), "encrypt")
 
 # linear regression to find fixed and per-byte costs for both datasets
