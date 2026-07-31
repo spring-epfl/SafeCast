@@ -344,8 +344,13 @@ fn bench_pep_ctr_cmac_decrypt(c: &mut Criterion) {
                         let mut computed_mac = [0u8; 16];
                         signer.sign(&mut computed_mac).unwrap();
 
+                        // 3. comparing with the received MAC
+                        let mac_ok =
+                            computed_mac[..CMAC_TAG_LEN] == decrypted[sz..sz + CMAC_TAG_LEN];
+
                         total += t0.elapsed();
 
+                        black_box(mac_ok);
                         black_box(&decrypted);
                         black_box(&computed_mac);
                     }

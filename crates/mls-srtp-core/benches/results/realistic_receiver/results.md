@@ -186,8 +186,8 @@ run:
 
 Here the "current" class dominates: 99.8% of the calls simply reuse the
 running frame's key at about 300 ns. The 261 advances are at the frame
-boundaries The 1,593 stragglers at ~492 ns are the flip-flop packets discussed
-in section 2.
+boundaries. The 1,593 stragglers at ~492 ns are the flip-flop packets
+discussed in section 2.
 
 ### 4. How much key history do we need?
 

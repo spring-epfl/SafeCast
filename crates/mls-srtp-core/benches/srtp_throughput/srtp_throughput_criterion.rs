@@ -317,9 +317,8 @@ fn bench_srtp_unprotect_throughput(c: &mut Criterion) {
                     let mut total = Duration::ZERO;
                     for _ in 0..iters {
 
-                        // refreshing batch if exhausted (happens only 1 in
-                        // 50,000 iterations; criterion's outlier detection
-                        // filters it)
+                        // refreshing the batch when exhausted. This runs
+                        // before the clock starts, so it is not timed.
                         if idx >= encrypted.len() {
                             let (e, r) = make_batch();
                             encrypted = e;

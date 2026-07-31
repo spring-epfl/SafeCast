@@ -219,11 +219,11 @@ fn bench_rekey_breakdown(c: &mut Criterion) {
         bg.finish();
     }
 
-    // --- Sender component 3: stage_commit() ---
+    // --- Sender component 3: build() + stage_commit() together ---
     //
-    // Encrypts the plaintext commit into a
-    // PrivateMessage using AEAD. This is the symmetric counterpart of
-    // unprotect_message on the receiver side. Cost is roughly constant
+    // stage_commit() encrypts the plaintext commit into a PrivateMessage
+    // using AEAD. This benchmark times build() + stage_commit()
+    // the build-only benchmark above. Cost is roughly constant
     // because it is a single AEAD encryption regardless of group size.
     {
         let mut bg = c.benchmark_group("breakdown_sender_build_and_stage");

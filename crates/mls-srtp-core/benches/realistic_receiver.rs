@@ -43,7 +43,8 @@
 //!     into one table. The row holds the run's configuration and its results.
 //!   - --sweep goes over all 15 payload sizes x 3 granularities x
 //!     {clean, disturbed} configurations, plus the packet-level and
-//!     frame-level K sweeps. It writes every run as one CSV row.
+//!     frame-level K sweeps and the every-n sweep. It writes every run
+//!     as one CSV row.
 //!
 //! Run (defaults = dual path, 100 us jitter per path, 1e-4 loss per copy, 2 ms path skew):
 //!   cargo bench --package mls-srtp-core --bench realistic_receiver
@@ -178,9 +179,9 @@ struct Args {
     #[arg(long)]
     sweep: bool,
 
-    /// runs only one part of the sweep: payload, k_packet or k_frame.
-    /// The CSV keeps the other parts' rows and only this part's rows
-    /// are replaced
+    /// runs only one part of the sweep: payload, k_packet, k_frame or
+    /// n_sweep. The CSV keeps the other parts' rows and only this
+    /// part's rows are replaced
     #[arg(long)]
     sweep_group: Option<String>,
 
@@ -1040,7 +1041,9 @@ fn sweep_cfg(granularity: Granularity, payload: usize, facility: bool, args: &Ar
 ///   - the payload sweep: every granularity at every SWEEP_PAYLOADS size,
 ///     in the clean and in the disturbed condition (90 runs),
 ///   - the packet-level K sweep at 1424 B disturbed (15 runs),
-///   - the frame-level K sweep at 1424 B disturbed (11 runs).
+///   - the frame-level K sweep at 1424 B disturbed (11 runs),
+///   - the every-n sweep at 1424 B disturbed (12 runs),
+/// for 128 runs in total.
 fn sweep(args: &Args) {
 
     // the CSV path
@@ -1063,8 +1066,8 @@ fn sweep(args: &Args) {
     let mut fresh = format!("{CSV_HEADER}\n");
     if let Some(group) = &args.sweep_group {
         assert!(
-            ["payload", "k_packet", "k_frame"].contains(&group.as_str()),
-            "unknown sweep group {group:?} (use payload, k_packet or k_frame)"
+            ["payload", "k_packet", "k_frame", "n_sweep"].contains(&group.as_str()),
+            "unknown sweep group {group:?} (use payload, k_packet, k_frame or n_sweep)"
         );
         if let Ok(existing) = std::fs::read_to_string(&csv_path) {
             for line in existing.lines().skip(1) {

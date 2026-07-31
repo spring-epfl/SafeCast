@@ -126,8 +126,8 @@ fn bench_replay_protection(c: &mut Criterion) {
 
             // every iteration: fresh clone (untimed setup), then the timed
             // rejecting unprotect. The clone is returned so its drop is
-            // untimed too (that's how Criterion works). See the module doc for why a fresh clone is
-            // required on every iteration)
+            // untimed too (that's how Criterion works). See the module doc
+            // for why a fresh clone is required on every iteration.
             b.iter_batched(
                 || encrypted.clone(),
                 |mut replay_buf| {
