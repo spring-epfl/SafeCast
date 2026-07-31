@@ -2,6 +2,7 @@
 name = "mls-srtp-client"
 version = "0.1.0"
 edition = "2024"
+description = "MLS-SRTP demo client: creator, sender, or receiver"
 
 [dependencies]
 mls-srtp-core = { path = "../mls-srtp-core" }
@@ -10,5 +11,4 @@ openmls_traits = { workspace = true }
 srtp = { workspace = true }
 hex = { workspace = true }
 tokio = { workspace = true }
-reqwest = { workspace = true }
 clap = { workspace = true }

@@ -6,6 +6,4 @@ description = "Authentication Service: credential registry for MLS-SRTP"
 
 [dependencies]
 actix-web = { workspace = true }
-actix-rt = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }

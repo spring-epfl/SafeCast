@@ -5,7 +5,7 @@
 //! responsible for validating credentials so that group members can verify
 //! each other's identities.
 //!
-//! This implementation contains an in-memory `HashMap``, 
+//! This implementation contains an in-memory `HashMap`,
 //! with no persistence and no authentication on the registration endpoint. 
 //! It is sufficient for demonstrating the credential verification flow.
 //!
