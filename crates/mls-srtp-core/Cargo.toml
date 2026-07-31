@@ -15,6 +15,7 @@ openmls_basic_credential = { workspace = true }
 openmls_traits = { workspace = true }
 ds-lib = { workspace = true }
 srtp = { workspace = true }
+srtp2-sys = { workspace = true }
 hex = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }

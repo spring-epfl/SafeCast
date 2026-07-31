@@ -26,6 +26,12 @@ ds-lib = { path = "openmls/delivery-service/ds-lib" }
 # crates/mls-srtp-core/benches/protect_unprotect_asymmetry/) and adds
 # srtp_inplace_rekey for the fine-grained frame/packet rekeying.
 srtp = { path = "vendor/srtp" }
+# Also a dependency of mls-srtp-core: its build script compiles
+# benches/c/srtp_kdf.c (the SRTP KDF copied out of libsrtp's srtp.c),
+# which includes the config.h generated while srtp2-sys builds libsrtp.
+# The srtp2-sys build script exports that path as DEP_SRTP2_INCLUDE,
+# and Cargo only passes it to crates that depend on srtp2-sys (this one).
+srtp2-sys = { path = "vendor/srtp2-sys" }
 
 # HTTP server
 actix-web = "4"

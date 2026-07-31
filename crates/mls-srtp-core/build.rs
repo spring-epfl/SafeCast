@@ -3,37 +3,13 @@ fn main() {
     // for the key_derivation benchmark. Uses libsrtp2's internal cipher
     // abstraction (copy-pasted from srtp.c).
 
-    // finding the srtp2-sys crate source for libsrtp2 headers
-    let srtp2_sys = std::path::PathBuf::from(
-        std::env::var("CARGO_HOME")
-            .unwrap_or_else(|_| format!("{}/.cargo", std::env::var("HOME").unwrap())),
-    );
+    // libsrtp2 headers from the vendored srtp2-sys copy
+    let manifest_dir = std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
+    let libsrtp_dir = manifest_dir.join("../../vendor/srtp2-sys/libsrtp");
 
-    // finding the exact srtp2-sys directory
-    let registry_src = srtp2_sys.join("registry/src/index.crates.io-1949cf8c6b5b557f");
-    let srtp2_dir = std::fs::read_dir(&registry_src)
-        .expect("failed to read cargo registry")
-        .filter_map(|e| e.ok())
-        .find(|e| e.file_name().to_string_lossy().starts_with("srtp2-sys-"))
-        .expect("srtp2-sys not found in cargo registry")
-        .path();
-
-    let libsrtp_dir = srtp2_dir.join("libsrtp");
-
-    // finding the generated config.h from the srtp2-sys build
-    let out_dir = std::env::var("OUT_DIR").unwrap();
-    // config.h is in target/{profile}/build/srtp2-sys-{hash}/out/crypto/include/
-    let target_dir = std::path::Path::new(&out_dir)
-        .ancestors()
-        .find(|p| p.file_name().map(|f| f == "build").unwrap_or(false))
-        .expect("could not find build dir");
-    let srtp2_out = std::fs::read_dir(target_dir)
-        .expect("failed to read build dir")
-        .filter_map(|e| e.ok())
-        .find(|e| e.file_name().to_string_lossy().starts_with("srtp2-sys-"))
-        .expect("srtp2-sys build output not found")
-        .path()
-        .join("out");
+    // generated config.h location, exported by the srtp2-sys build script
+    let srtp2_include = std::env::var("DEP_SRTP2_INCLUDE")
+        .expect("DEP_SRTP2_INCLUDE not set; srtp2-sys build script should export it");
 
     let openssl = pkg_config::probe_library("openssl")
         .expect("failed to find OpenSSL via pkg-config");
@@ -46,7 +22,7 @@ fn main() {
     build.include(libsrtp_dir.join("include"));
 
     // generated config.h
-    build.include(srtp2_out.join("crypto/include"));
+    build.include(&srtp2_include);
 
     // OpenSSL headers (needed by libsrtp2's cipher backends)
     for path in &openssl.include_paths {

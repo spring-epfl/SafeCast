@@ -110,4 +110,7 @@ fn find_libsrtp2(out_dir: &str) {
     println!("cargo:rerun-if-changed=libsrtp");
     println!("cargo:rustc-link-lib=static=srtp2");
     println!("cargo:rustc-link-search={}", out_dir);
+    // exports the generated config.h dir as DEP_SRTP2_INCLUDE
+    // (read by mls-srtp-core's build script to compile srtp_kdf.c)
+    println!("cargo:include={}/crypto/include", out_dir);
 }

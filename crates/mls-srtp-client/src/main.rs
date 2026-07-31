@@ -67,7 +67,8 @@ struct Cli {
     #[arg(long, default_value = "1")]
     receivers: u32,
 
-    /// Number of SRTP packets to send (sender only).
+    /// Number of SRTP packets each sender sends (receivers use it to
+    /// know how many packets to expect).
     #[arg(long, default_value = "3")]
     packets: u32,
 
