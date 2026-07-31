@@ -60,7 +60,7 @@ impl StreamRatchet {
     /// Generation starts at 0.
     pub fn from_seed(seed: Vec<u8>) -> Self {
         // rejecting a wrong-sized seed
-        debug_assert_eq!(
+        assert_eq!(
             seed.len(),
             CHAIN_SECRET_LEN,
             "ratchet seed must be {CHAIN_SECRET_LEN} bytes"

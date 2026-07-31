@@ -93,8 +93,8 @@ impl GenerationScheme {
 /// ticks per second, the 90 kHz RTP clock. Sources:
 /// - RFC 3551 section 5: "All of these video encodings use an RTP timestamp frequency
 /// of 90,000 Hz"
-/// - RFC 4175, the uncompressed-video format ST 2110 uses, requires its `rate`
-/// parameter to be 90000).
+/// - RFC 4175 (the uncompressed-video format ST 2110 uses) requires its `rate`
+/// parameter to be 90000.
 /// Every packet of one video frame carries the same timestamp. The parameter `frame_period`
 /// is how many ticks the timestamp advances from one frame to the next, that is,
 /// clock rate / frame rate, e.g. 90000 / 60 = 1500 ticks at 60 fps. So the timestamp's
@@ -112,7 +112,7 @@ impl GenerationScheme {
 /// an epoch.
 ///
 /// `frame_period` must be non-zero and a whole
-/// number (which it the case for the standard rates: 90000 / 60 = 1500,
+/// number (which is the case for the standard rates: 90000 / 60 = 1500,
 /// 90000 / 30 = 3000, 90000 / 29.97 = 3003).
 pub fn frame_generation(ts: u32, epoch_start_ts: u32, frame_period: u32) -> u64 {
     debug_assert_ne!(frame_period, 0, "frame_period must be non-zero");

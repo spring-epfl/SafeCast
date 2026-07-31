@@ -48,7 +48,7 @@ pub enum Granularity {
     Packet,
     /// One key per `n` consecutive packets: rekey when the packet count
     /// crosses a multiple of `n`. Packet-level keying is the n = 1 case,
-    /// frame-level the n = packets-per-frame case
+    /// frame-level the n = packets-per-frame case. EveryN covers
     /// everything between.
     EveryN(u32),
 }
