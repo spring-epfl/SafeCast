@@ -11,7 +11,7 @@
 //!   - too far ahead -> seek-cap drop (an unauthenticated packet must not be
 //!     able to demand unbounded work).
 //!
-//! We catch-up runs on a clone of the ratchet, and
+//! The catch-up runs on a clone of the ratchet, and
 //! the real ratchet/window only adopts the clone's result after the packet
 //! authenticates.
 //!
@@ -79,10 +79,6 @@ pub struct RecvStats {
     /// AEAD authentication failures and malformed packets.
     pub drops_auth: u64,
 }
-
-/// The default replay window size libsrtp falls back to when a policy leaves
-/// `window_size` at 0.
-const DEFAULT_REPLAY_WINDOW: u64 = 128;
 
 /// A receiver-side SRTP stream with a bounded window of generation keys.
 /// One instance handles one inbound SSRC.
@@ -431,9 +427,4 @@ impl ReceiverKeyManager {
             }
         }
     }
-}
-
-/// Making the libsrtp default public so benches can print the replay window size.
-pub const fn default_replay_window() -> u64 {
-    DEFAULT_REPLAY_WINDOW
 }
