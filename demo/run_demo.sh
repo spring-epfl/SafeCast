@@ -9,12 +9,12 @@
 #   5. Receiver(s) (joiners)         - join MLS group, receive SRTP
 #
 # Usage:
-#   ./run_demo.sh           # default: 1 sender + 1 receiver
-#   ./run_demo.sh 3         # 1 sender + 3 receivers
+#   ./demo/run_demo.sh      # default: 1 sender + 1 receiver
+#   ./demo/run_demo.sh 3    # 1 sender + 3 receivers
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PIDS=()
 
 cleanup() {

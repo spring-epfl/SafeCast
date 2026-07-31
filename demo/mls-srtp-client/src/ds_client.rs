@@ -35,6 +35,7 @@ pub struct AsRegisterRequest {
 /// JSON response from `GET /lookup/{identity}` on the AS.
 #[derive(Deserialize)]
 pub struct AsLookupResponse {
+    #[allow(dead_code)]
     pub identity: String,
     /// Ed25519 public signing key, standard-base64-encoded.
     pub public_key: String,

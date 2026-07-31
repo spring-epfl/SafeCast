@@ -20,13 +20,17 @@ use std::collections::HashMap;
 
 use clap::{Parser, ValueEnum};
 
-use mls_srtp_core::ds_client::DsClient;
 use mls_srtp_core::mls::{
     export_srtp_keys, parse_credential_identity, ssrc_from_identity, MlsMember, CIPHERSUITE,
 };
-use mls_srtp_core::multicast;
 use mls_srtp_core::rtp::RtpPacket;
 use mls_srtp_core::srtp_session::{create_receiver_session, create_sender_session};
+
+// demo-only
+mod ds_client;
+mod multicast;
+
+use ds_client::DsClient;
 
 use openmls::prelude::tls_codec::{Deserialize as TlsDeserialize, Serialize as TlsSerialize};
 use openmls::prelude::*;

@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "crates/mls-srtp-core",
-    "crates/auth-service",
-    "crates/mls-srtp-client",
+    "demo/auth-service",
+    "demo/mls-srtp-client",
 ]
 exclude = ["openmls"]
 resolver = "2"

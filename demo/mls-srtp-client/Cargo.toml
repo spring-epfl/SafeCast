@@ -5,10 +5,17 @@ edition = "2024"
 description = "MLS-SRTP demo client: creator, sender, or receiver"
 
 [dependencies]
-mls-srtp-core = { path = "../mls-srtp-core" }
+mls-srtp-core = { path = "../../crates/mls-srtp-core" }
 openmls = { workspace = true }
 openmls_traits = { workspace = true }
 srtp = { workspace = true }
 hex = { workspace = true }
 tokio = { workspace = true }
 clap = { workspace = true }
+# for the ds_client module
+ds-lib = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+base64 = { workspace = true }
+# for the multicast module
+socket2 = { workspace = true }
