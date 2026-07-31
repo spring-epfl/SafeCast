@@ -14,7 +14,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 use ds_lib::messages::{AuthToken, RecvMessageRequest, RegisterClientRequest};
-use ds_lib::{ClientKeyPackages, GroupMessage};
+use ds_lib::ClientKeyPackages;
 use openmls::prelude::tls_codec::{
     Deserialize as TlsDeserialize, Serialize as TlsSerialize, TlsByteVecU8, TlsVecU16, TlsVecU32,
 };
@@ -286,38 +286,6 @@ impl DsClient {
             Ok(())
         } else {
             Err(format!("DS send welcome failed: HTTP {}", resp.status()))
-        }
-    }
-
-    /// Sends a group message (Commit, application message, etc.) via the DS.
-    ///
-    /// `POST /send/message` with a TLS-serialized `GroupMessage` containing
-    /// the MLS message and a list of recipient client identities.
-    /// Useful for distributing Commits to existing group members.
-    pub async fn send_group_message(
-        &self,
-        msg: MlsMessageIn,
-        recipients: &[Vec<u8>],
-    ) -> Result<(), String> {
-        // wrapping the MLS message with the recipient list for DS routing
-        let group_msg = GroupMessage::new(msg, recipients);
-        // serializing using the TLS presentation language
-        let body = group_msg
-            .tls_serialize_detached()
-            .map_err(|e| format!("TLS serialize GroupMessage failed: {e}"))?;
-
-        let resp = self
-            .http
-            .post(format!("{}/send/message", self.ds_url))
-            .body(body)
-            .send()
-            .await
-            .map_err(|e| format!("DS send message failed: {e}"))?;
-
-        if resp.status().is_success() {
-            Ok(())
-        } else {
-            Err(format!("DS send message failed: HTTP {}", resp.status()))
         }
     }
 

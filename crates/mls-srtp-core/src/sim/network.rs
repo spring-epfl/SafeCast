@@ -1,6 +1,6 @@
 //! The simulated network: decides, for every sent packet, when it arrives
 //! at the receiver, or that it is lost. Reordering emerges from the
-//! the arrival times, exactly as in a real network (a packet delayed
+//! arrival times, exactly as in a real network (a packet delayed
 //! longer than the send spacing gets overtaken by later packets).
 //!
 //! The model is ST 2022-7 dual-path protection, the way broadcast
