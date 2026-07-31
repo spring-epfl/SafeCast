@@ -20,7 +20,7 @@
 //! these extra copies live in a HashMap in RAM. Since in a production deployment
 //! the backend would be an on-disk database, we do NOT count this duplication.
 //!
-//! Results are written to benches/results/memory_usage.json.
+//! Results are written to benches/results/memory_usage/memory_usage.json.
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -265,7 +265,7 @@ fn main() {
     }
 
     // writing final results to JSON file
-    let output_dir = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/benches/results"));
+    let output_dir = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/benches/results/memory_usage"));
     std::fs::create_dir_all(output_dir).expect("failed to create output dir");
     let output_path = output_dir.join("memory_usage.json");
 

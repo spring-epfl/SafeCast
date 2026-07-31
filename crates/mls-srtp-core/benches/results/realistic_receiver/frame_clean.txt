@@ -9,7 +9,7 @@ outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
 paths     advance   (g above max, derives keys): n=261 mean=1281.8 ns p99=1833 ns max=9250 ns
           current   (g equals max, key reused):  n=949739 mean=312.3 ns p99=416 ns max=65166 ns
           straggler (g below max, old key):      n=0
-depths    d=1: n=261 mean=1282 ns
+keys derived  1 key: n=261 mean=1282 ns
 keying    loss rate = 0/1000000 = 0.000e0
 timing    950000 measured calls (first 50000 of 1000000 arrivals skipped as warmup)
           mean=312.6 ns p50=292 p99=416 p99.9=459 max=65166 ns -> 37.16 Gbps at 1452 B wire
