@@ -23,7 +23,7 @@ ds-lib = { path = "openmls/delivery-service/ds-lib" }
 # vendor/srtp2-sys, our patched copy of the low-level bindings, which
 # bundles libsrtp v2.8.0 instead of v2.3.0 (v2.3.0 had a SET_TAG bug
 # costing ~120 ns on every protect() call: see
-# crates/mls-srtp-core/benches/protect_unprotect_asymmetry/) and adds
+# crates/mls-srtp-core/benches/encrypt_decrypt_asymmetry/) and adds
 # srtp_inplace_rekey for the fine-grained frame/packet rekeying.
 srtp = { path = "vendor/srtp" }
 # Also a dependency of mls-srtp-core: its build script compiles

@@ -1,13 +1,19 @@
 /*
- * libsrtp_settag_bug.c — Demonstrates the root cause of the SRTP protect-vs-
- * unprotect timing asymmetry.
+ * Demonstrates the root cause of the SRTP protect-vs-unprotect timing
+ * asymmetry.
+ *
+ * This is the first of two investigations into that asymmetry. Here, with the
+ * libsrtp version bundled by srtp2-sys (v2.3.0-pre), protect is the slower
+ * direction. Fixing the bug found below (which our patched libsrtp does, by
+ * moving to v2.8.0) flips the asymmetry: decryption becomes slightly slower, which the
+ * follow-up gcm_decrypt_overhead.c then explains.
  *
  * BACKGROUND
  * ==========
  * AES-128-GCM uses AES in CTR mode for both encryption and decryption, so
  * protect (encrypt) and unprotect (decrypt) should have the same throughput.
- * Yet benchmarks consistently show protect is ~120-140 ns slower per packet,
- * independent of payload size (i.e. a fixed per-packet overhead, not per-byte).
+ * Yet our benchmarks showed protect is ~120-140 ns slower per packet,
+ * independent of payload size (i.e. a fixed per-packet overhead).
  *
  * ROOT CAUSE
  * ==========
@@ -20,7 +26,7 @@
  *     EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, tag_len, &dummy_tag);
  *
  * with a zeroed-out dummy tag. The comment says "OpenSSL requires the Tag to
- * be set before processing AAD", but that is only true for DECRYPTION:
+ * be set before processing AAD", but that is only true for decryption:
  *
  *   - Decryption: The receiver needs to know the expected authentication tag
  *     so it can verify data integrity after decryption. OpenSSL requires this
@@ -28,7 +34,7 @@
  *     sets a dummy here because the real tag hasn't been extracted from the
  *     packet yet at this point.
  *
- *   - Encryption: The sender GENERATES the tag as output (it doesn't receive
+ *   - Encryption: The sender generates the tag as output (it doesn't receive
  *     one). Calling SET_TAG on an encrypt context is meaningless. OpenSSL's own
  *     documentation states: "For GCM, this call is only valid when decrypting
  *     data." (https://docs.openssl.org/3.0/man3/EVP_EncryptInit/#gcm-and-ocb-modes)
@@ -42,7 +48,10 @@
  * stack, costs ~100-120 ns per invocation. This happens on every single
  * protect call, adding ~120 ns of pure waste.
  *
- * The fix was applied upstream in cisco/libsrtp commit 837ba9d9 ("set dummy tag only when decrypting"). 
+ * However, libsrtp issues that SET_TAG call unconditionally,
+ * including on encrypt contexts where it does nothing but raise a ~120 ns
+ * error. The fix is to make the call only when decrypting: it was applied
+ * upstream in cisco/libsrtp commit 837ba9d9 ("set dummy tag only when decrypting").
  * https://github.com/cisco/libsrtp/commit/837ba9d99aa1163fa1a1d6eef39e1343f1a73d67
  * The bundled libsrtp in the Rust srtp2-sys crate (v3.0.2) is based on libsrtp 2.3.0-pre, 
  * which predates the fix.
@@ -51,7 +60,7 @@
  * ==============
  * This program replicates libsrtp's exact per-packet OpenSSL calling sequence
  * (with a reused EVP_CIPHER_CTX, matching libsrtp's session model) and then
- * isolates the issue step by step:
+ * isolates the issue:
  *
  *   TEST 1 — Overall: protect vs unprotect per-packet cost (confirms the gap).
  *   TEST 2 — Step breakdown: times each OpenSSL call individually to show
@@ -269,7 +278,7 @@ int main(void)
      * TEST 2 — Per-step breakdown (standard 1424B payload)
      *
      * Times each OpenSSL call in the protect/unprotect sequence individually.
-     * This reveals that set_aad is the ONLY step that differs between the
+     * This reveals that set_aad is the only step that differs between the
      * two directions.
      * ====================================================================== */
     fprintf(stderr, "\n=== TEST 2: per-step timing breakdown (1424B payload) ===\n\n");

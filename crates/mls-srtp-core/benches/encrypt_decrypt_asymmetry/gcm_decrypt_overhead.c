@@ -1,12 +1,12 @@
 /*
- * gcm_decrypt_overhead.c — Investigates why AES-128-GCM decryption (unprotect)
+ * Investigates why AES-128-GCM decryption (unprotect)
  * is ~20-40 ns slower than encryption (protect), which are used in SRTP. 
- *
+ * 
  * BACKGROUND
  * ==========
- * With the libsrtp SET_TAG bug fixed (v2.8.0), protect no longer wastes ~120 ns
- * on error handling (ERR_raise() call). Now the asymmetry is reversed: unprotect is
- * slower by ~20-40 ns per packet, independent of payload size.
+ * With the libsrtp SET_TAG bug fixed (see libsrtp_settag_bug.c), encryption 
+ * no longer wastes ~120 ns on error handling. Now the timing asymmetry is reversed: 
+ * decryption is slower by ~20-40 ns per packet.
  *
  * This program replicates the OpenSSL calling sequences used by libsrtp
  * v2.8.0 (see srtp/srtp.c, functions srtp_protect_aead and
@@ -32,8 +32,8 @@
  *
  * EXTRA WORK IN DECRYPT
  * =====================
- *   + SET_TAG(dummy) + memset(16B)           [step 2, not present in encrypt]
- *   + SET_TAG(real_tag) + memcpy(16B)        [step 4, not present in encrypt]
+ *   + SET_TAG(dummy) + memset(16B)           [step 2]
+ *   + SET_TAG(real_tag) + memcpy(16B)        [step 4]
  *   + constant-time tag verification         [inside step 6's finalize]
  *   - GET_TAG                                [step 5 in encrypt, not in decrypt]
  *
@@ -43,8 +43,9 @@
  * ===========
  * The ~20-40 ns decrypt overhead comes almost entirely from two extra
  * OpenSSL API calls (~15 ns each) that the decrypt path requires: one
- * to declare the expected tag length before processing, and another to
- * provide the actual authentication tag for verification. Neither is
+ * to declare the expected tag length up front (OpenSSL has
+ * to know how many tag bytes to expect before it starts), and another to
+ * provide the actual authentication tag for that verification. Neither is
  * needed on the encrypt path (which only retrieves the generated tag
  * at the end). The constant-time tag verification itself adds negligible
  * cost.
