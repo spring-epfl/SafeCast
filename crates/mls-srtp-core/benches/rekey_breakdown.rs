@@ -223,6 +223,7 @@ fn bench_rekey_breakdown(c: &mut Criterion) {
     //
     // stage_commit() encrypts the plaintext commit into a PrivateMessage
     // using AEAD. This benchmark times build() + stage_commit()
+    // together, and the notebook derives the stage cost by subtracting
     // the build-only benchmark above. Cost is roughly constant
     // because it is a single AEAD encryption regardless of group size.
     {

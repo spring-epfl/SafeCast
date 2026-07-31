@@ -21,7 +21,7 @@
 #include "err.h"
 #include "srtp.h"
 
-/* --- Copy-pasted from srtp.c lines 572-583 --- */
+/* --- Copy-pasted from srtp.c (the srtp_prf_label enum) --- */
 
 typedef enum {
     label_rtp_encryption = 0x00,
@@ -34,7 +34,7 @@ typedef enum {
     label_rtp_header_salt = 0x07
 } srtp_prf_label;
 
-/* --- Copy-pasted from srtp.c lines 669-745 (non-OPENSSL_KDF path) ---
+/* --- Copy-pasted from srtp.c (the non-OPENSSL_KDF srtp_kdf_* path) ---
  *     Only change: removed `static` from function signatures.          */
 
 /*
@@ -131,7 +131,8 @@ int srtp_kdf_ensure_init(void)
 
 /*
  * Entry point for the Rust benchmark: runs the full SRTP KDF for
- * AES-128-GCM, matching the sequence in srtp_stream_init_keys().
+ * AES-128-GCM, deriving the same four session keys as
+ * srtp_stream_init_keys().
  *
  * key_material must be 30 bytes: master_key (16) || master_salt (12)
  * || 2 zero-padding bytes (to match SRTP_AES_ICM_128_KEY_LEN_WSALT = 30).

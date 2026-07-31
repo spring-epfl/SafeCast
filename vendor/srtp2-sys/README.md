@@ -36,8 +36,14 @@ updated to pick it up.
 
 # The changes
 
-1. Updated the bundled libsrtp submodule from v2.3.0 to v2.8.0 (latest
+1. Updated the bundled libsrtp from v2.3.0 to v2.8.0 (latest
    stable), which includes the fix along with all other improvements.
 2. Added `ac_cv_search_EVP_CIPHER_CTX_reset` to the configure environment in
    `build.rs` (libsrtp v2.8.0 checks for this function, which didn't exist in
    v2.3.0's configure script).
+3. Added `srtp_inplace_rekey` to the bundled libsrtp (`include/srtp.h` +
+   `srtp/srtp.c`): installs a new session key and salt directly into an
+   existing AES-GCM stream's cipher, preserving the replay window, without
+   the master-to-session KDF or the stream rebuild that `srtp_update` does.
+   Exposed in Rust as `Session::inplace_rekey` by the `srtp` crate copy in
+   `../srtp`.
