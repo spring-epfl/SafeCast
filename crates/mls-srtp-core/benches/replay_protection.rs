@@ -13,7 +13,7 @@
 //! (https://github.com/cisco/libsrtp/blob/6e23ad8d971209e152ef4aa5349be9969e108d14/srtp/srtp.c#L313). 
 //! An earlier version of this benchmark had exactly that bug and reported ~4 ns.
 //! Hence `iter_batched`: every iteration gets a fresh clone of the
-//! ciphertext as UNTIMED setup, and only the rejecting `unprotect` call is
+//! ciphertext as untimed setup, and only the rejecting `unprotect` call is
 //! timed.
 //!
 //! The rejection happens at the replay-window check, so the cost should be

@@ -15,16 +15,6 @@
 //!   - standard MTU (1424 B): ~226,500 pps  => N ≈ 1,130,000
 //!   - jumbo MTU (8924 B):    ~36,100 pps   => N ≈ 180,000
 //!
-//! Why count packets instead of firing every 5 wall-clock seconds: in real
-//! traffic the two are the same schedule, because the media runs at a
-//! constant packet rate (5 seconds IS N packets). The bench, however,
-//! processes packets as fast as the CPU allows, and the measured per-packet RTCP
-//! share would depend on the benchmark machine's speed. Packet count is the stream's
-//! own clock, so "every N packets" stays faithful to "every 5 seconds of media" at any
-//! bench speed. (A wall-clock check per packet would also put a ~20 ns
-//! clock readout inside the timed loop, which at these per-packet times
-//! would swamp the effect being measured.)
-//!
 //! Why 1080p60 and not 4K/8K: a 4K stream sends 4x the packets per second, 
 //! so N is 4x larger and the per-packet RTCP share (one protect_rtcp every N packets) 
 //! is 4x SMALLER (16x at 8K). 1080p is therefore more or less the worst case for

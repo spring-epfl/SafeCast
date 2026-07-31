@@ -1,7 +1,6 @@
 //! Measures how much memory each member needs to store the group state,
 //! for different group sizes.
 //!
-//! Run: cargo run --release --bin memory_usage
 //!
 //! We replace Rust's default memory allocator with a wrapper that counts
 //! how many bytes are currently allocated. We measure four components:
@@ -21,6 +20,8 @@
 //! the backend would be an on-disk database, we do NOT count this duplication.
 //!
 //! Results are written to benches/results/memory_usage/memory_usage.json.
+//! 
+//! Run: cargo run --release --bin memory_usage
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};

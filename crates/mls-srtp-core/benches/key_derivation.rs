@@ -1,6 +1,5 @@
 //! Criterion benchmarks for the MLS-SRTP key derivation pipeline.
 //!
-//! Run: cargo bench --package mls-srtp-core --bench key_derivation
 //!
 //! The full key derivation pipeline has two stages:
 //!
@@ -22,6 +21,8 @@
 //! Both stages run once at session setup and again on each MLS epoch change
 //! (new epoch -> new exporter secret -> new master key -> new session keys).
 //! Neither runs per packet.
+//! 
+//! Run: cargo bench --package mls-srtp-core --bench key_derivation
 
 use std::hint::black_box;
 

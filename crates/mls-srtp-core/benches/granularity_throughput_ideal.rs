@@ -35,13 +35,6 @@
 //! only on a frame's FIRST packet (the frame's remaining packets just
 //! encrypt). Averaged over the frame, each packet therefore carries
 //! rekey_time/packets_per_frame of extra time.
-//! 
-//! Why that shows up in the throughput (Gbps): throughput is
-//! bytes over time, and within one run every packet is the same size, so
-//! Gbps = packet_size / (average time per packet).
-//! Tiny example: 4 packets of 1000 B taking 1+1+1+5 = 8 us total. Bytes over
-//! time: 4000 B / 8 us = 500 B/us. Average per packet: 8/4 = 2 us, and
-//! 1000 B / 2 us = the same 500 B/us.
 //!
 //! In this benchmark, FRAME_BYTES is the size of one uncompressed 1080p frame 
 //! in 10-bit 4:2:2 (SMPTE ST 2110-20): 1920 x 1080 pixels x 2.5 bytes per pixel

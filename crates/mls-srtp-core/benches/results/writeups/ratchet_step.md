@@ -31,7 +31,7 @@ torn-down stream), re-running the master-to-session key derivation once per mast
 - **Frame-level:** 673 ns amortized over a frame's packets. A 1080p60 frame at
   the standard MTU (1424 B) is ~3-4k packets, so ~0.2 ns/packet: negligible.
 - **Packet-level:** 673 ns added to every packet, on top of the 252 ns default
-  encryption time at standard MTU (measured by `srtp_throughput_criterion.rs`).
+  encryption time at standard MTU (measured by `srtp_throughput.rs`).
   That is ~252 -> ~925 ns/packet, roughly 3.7x, meaning a drop of standard-MTU encrypt throughput from ~46 Gbps
   to ~12.5 Gbps. At standard MTU, the projected packet-level throughput is only modestly above a 4K@60FPS 10.3 Gbps stream, leaving little headroom. At the jumbo MTU (8924 B), the same 673 ns sits on top of a 1037 ns encryption time -> only a ~1.65x increase in per-packet time. Hence, packet-level throughput drops from ~69 Gbps to ~42 Gbps. The 673 ns is a fixed per-packet cost, so it weighs far less against a jumbo packet's longer encryption (~1037 ns) than against a standard packet's (~252 ns), letting jumbo comfortably cover 4K and 8K@50FPS.
 

@@ -7,7 +7,7 @@
 //! building the data path, where packet-level keying stops keeping up with a
 //! format's bitrate.
 //!
-//! The AES-128-GCM key setup has two parts. The AES key schedule expands the 16-byte key into
+//! The AES-128-GCM key setup has two parts. The key schedule expands the 16-byte key into
 //! the per-round subkeys AES uses internally on every block. The GHASH H subkey
 //! is a key-derived value that GCM's authentication step multiplies by. 
 //! Both are derived from the key, so a new key forces recomputing both.

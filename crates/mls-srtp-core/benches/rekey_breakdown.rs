@@ -1,6 +1,5 @@
 //! Criterion benchmarks for MLS rekey pipeline component breakdown.
 //!
-//! Run: cargo bench --package mls-srtp-core --bench rekey_breakdown
 //!
 //! Breaks down the sender and receiver rekey pipelines into their individual
 //! sub-operations, measured separately across group sizes. This lets us
@@ -22,6 +21,8 @@
 //! NOTE: `process_unverified_message` is `pub(crate)` in upstream OpenMLS.
 //! We changed it to `pub` in our local fork to allow benchmarking the
 //! receiver-side path decryption separately from the framing decryption.
+//! 
+//! Run: cargo bench --package mls-srtp-core --bench rekey_breakdown
 
 use std::hint::black_box;
 

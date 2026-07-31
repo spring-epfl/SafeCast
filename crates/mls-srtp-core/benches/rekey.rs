@@ -1,6 +1,5 @@
 //! Criterion benchmarks for MLS rekey (self-update commit) operations.
 //!
-//! Run: cargo bench --package mls-srtp-core --bench rekey
 //!
 //! Measures the cost of rekeying an MLS group (i.e., creating a self-update
 //! commit that advances the group to a new epoch with fresh key material).
@@ -26,6 +25,8 @@
 //!
 //!   5. receiver_rekey_pipeline: process_rekey_commit + export_srtp_keys
 //!      (total receiver-side cost per epoch change).
+//! 
+//! Run: cargo bench --package mls-srtp-core --bench rekey
 
 use std::hint::black_box;
 

@@ -29,11 +29,6 @@
 //!   over the plaintext payload, truncates to 64 bits, appends the tag,
 //!   and then encrypts (payload + tag) with AES-CTR.
 //!
-//! - **Payload only.** Like SRTP, PEP encrypts only the RTP payload, not
-//!   the header (§20). Unlike SRTP, PEP does not authenticate the header:
-//!   the CTR-only mode has no authentication at all, and CTR_CMAC-64
-//!   authenticates only the payload.
-//!
 //! Run:
 //!   cargo bench --package mls-srtp-core --bench pep_throughput
 
