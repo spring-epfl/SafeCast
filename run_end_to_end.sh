@@ -25,6 +25,9 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+# run from the repo root so the cargo invocations below find the workspace
+# no matter where the script is called from
+cd "$REPO_ROOT"
 CRITERION_SRC="$REPO_ROOT/target/criterion"
 CRITERION_DST="$REPO_ROOT/crates/mls-srtp-core/benches/results/criterion"
 NOTEBOOK="$REPO_ROOT/figures_from_benches.ipynb"
