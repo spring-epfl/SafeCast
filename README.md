@@ -92,11 +92,8 @@ Or run a single benchmark:
 cargo bench --package mls-srtp-core --bench <name>
 ```
 
-The one exception is `memory_usage`, which is a binary and not a
-Criterion bench (it measures memory, not time):
-```bash
-cargo run --release --package mls-srtp-core --bin memory_usage
-```
+(`memory_usage` is the only one not built on Criterion as it measures memory instead
+of time, but it runs through the same `cargo bench` interface.)
 
 | Benchmark | What it measures | Output |
 | --- | --- | --- |

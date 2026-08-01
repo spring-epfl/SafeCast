@@ -27,9 +27,12 @@ criterion = { version = "0.5", features = ["html_reports"] }
 clap = { workspace = true }
 openssl = "0.10"
 
-[[bin]]
+# Not a Criterion bench (it measures memory, not time), but declared as a
+# bench target so it runs through the same `cargo bench --bench` interface.
+[[bench]]
 name = "memory_usage"
-path = "src/bin/memory_usage.rs"
+path = "benches/memory_usage.rs"
+harness = false
 
 [[bench]]
 name = "replay_protection"

@@ -21,7 +21,7 @@
 //!
 //! Results are written to benches/results/memory_usage/memory_usage.json.
 //! 
-//! Run: cargo run --release --bin memory_usage
+//! Run: cargo bench --package mls-srtp-core --bench memory_usage
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
