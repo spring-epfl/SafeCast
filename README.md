@@ -92,6 +92,12 @@ Or run a single benchmark:
 cargo bench --package mls-srtp-core --bench <name>
 ```
 
+The one exception is `memory_usage`, which is a binary and not a
+Criterion bench (it measures memory, not time):
+```bash
+cargo run --release --package mls-srtp-core --bin memory_usage
+```
+
 | Benchmark | What it measures | Output |
 | --- | --- | --- |
 | `srtp_throughput` | SRTP encryption/decryption throughput and latency across different payload sizes | Fig 1, 2; Table 1 |
