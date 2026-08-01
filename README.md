@@ -1,4 +1,4 @@
-# MLS-SRTP
+# MLS-SRTP: End-to-End Encrypted Real-Time Media over IP Multicast
 
 This repository is a research prototype and evaluation of a system for
 end-to-end encrypted real-time media transported over IP multicast. The design combines two
