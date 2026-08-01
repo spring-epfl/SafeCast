@@ -86,7 +86,7 @@ fn current_allocated() -> usize {
 // Each new member self-updates after joining to populate its leaf with
 // fresh HPKE key pairs (no blank nodes in the tree).
 
-use mls_srtp_core::mls::{
+use mls_srtp_core::keying::mls::{
     create_rekey_commit, export_srtp_keys, process_commit, MlsMember, CIPHERSUITE,
 };
 use openmls::prelude::*;

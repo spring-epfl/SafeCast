@@ -1,7 +1,7 @@
 //! MLS-SRTP shared library: building blocks for the MLS -> SRTP pipeline.
 //!
 //! Group keying:
-//!   - [`mls`]: MLS group member management and key export (RFC 9420)
+//!   - [`keying::mls`]: MLS group member management and key export (RFC 9420)
 //!   - [`keying::ratchet`]: MLS-seeded per-stream key ratchet for
 //!     fine-grained forward secrecy
 //!   - [`keying::granularity`]: SRTP streams that rotate their ratchet key
@@ -24,7 +24,6 @@
 //!     network instead of ideal in-order delivery
 
 pub mod keying;
-pub mod mls;
 pub mod receiver;
 pub mod simulation;
 pub mod transport;

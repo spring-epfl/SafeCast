@@ -28,7 +28,7 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use mls_srtp_core::mls::{
+use mls_srtp_core::keying::mls::{
     export_srtp_keys, ssrc_from_identity, MlsMember,
     CIPHERSUITE,
 };

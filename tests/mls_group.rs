@@ -7,7 +7,7 @@
 //!
 //! Run: cargo test --package mls-srtp-core --test mls_group -- --nocapture
 
-use mls_srtp_core::mls::{
+use mls_srtp_core::keying::mls::{
     export_srtp_keys, parse_credential_identity, ssrc_from_identity, MlsMember, CIPHERSUITE,
     SRTP_KEY_MATERIAL_LEN,
 };

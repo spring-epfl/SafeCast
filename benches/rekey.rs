@@ -32,7 +32,7 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 
-use mls_srtp_core::mls::{
+use mls_srtp_core::keying::mls::{
     create_rekey_commit, export_srtp_keys, process_commit, ssrc_from_identity, MlsMember,
     CIPHERSUITE,
 };

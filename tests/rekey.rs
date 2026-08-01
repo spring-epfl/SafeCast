@@ -13,7 +13,7 @@
 //!
 //! Run: cargo test --package mls-srtp-core --test rekey -- --nocapture
 
-use mls_srtp_core::mls::{
+use mls_srtp_core::keying::mls::{
     create_rekey_commit, export_srtp_keys, process_commit, ssrc_from_identity, MlsMember,
     CIPHERSUITE,
 };

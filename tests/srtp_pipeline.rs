@@ -2,7 +2,7 @@
 //!
 //! Run: cargo test --package mls-srtp-core --test srtp_pipeline -- --nocapture
 
-use mls_srtp_core::mls::{
+use mls_srtp_core::keying::mls::{
     export_srtp_keys, ssrc_from_identity, MlsMember, CIPHERSUITE,
 };
 use mls_srtp_core::transport::rtp::{RtpPacket, RTP_HEADER_LEN};

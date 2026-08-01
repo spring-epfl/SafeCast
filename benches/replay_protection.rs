@@ -27,7 +27,7 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 
-use mls_srtp_core::mls::{export_srtp_keys, ssrc_from_identity, MlsMember, CIPHERSUITE};
+use mls_srtp_core::keying::mls::{export_srtp_keys, ssrc_from_identity, MlsMember, CIPHERSUITE};
 use mls_srtp_core::transport::rtp::RtpPacket;
 use mls_srtp_core::transport::srtp_session::{create_receiver_session, create_sender_session};
 

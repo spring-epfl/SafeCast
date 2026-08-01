@@ -27,7 +27,7 @@ use openmls::prelude::MlsGroup;
 use openmls_traits::crypto::OpenMlsCrypto;
 use openmls_traits::types::HashType;
 
-use crate::mls::{build_exporter_context, AES_128_GCM_KEY_LEN, SRTP_KEY_MATERIAL_LEN};
+use crate::keying::mls::{build_exporter_context, AES_128_GCM_KEY_LEN, SRTP_KEY_MATERIAL_LEN};
 
 /// HKDF-Expand `info` label for the forward chain step (`S_g -> S_{g+1}`).
 pub const CHAIN_LABEL: &[u8] = b"next generation";
