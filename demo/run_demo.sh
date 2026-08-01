@@ -20,13 +20,28 @@ PIDS=()
 cleanup() {
     echo ""
     echo "Shutting down services..."
-    for pid in "${PIDS[@]}"; do
+    for pid in ${PIDS[@]+"${PIDS[@]}"}; do
         kill "$pid" 2>/dev/null || true
     done
     wait 2>/dev/null
     echo "Done."
 }
 trap cleanup EXIT
+
+# Polls until something is listening on 127.0.0.1:$port (10 s timeout). The
+# clients' first HTTP call panics on connection refused instead of retrying,
+# so the AS/DS must be bound before any client starts.
+wait_for_port() {
+    local port="$1" name="$2"
+    for _ in $(seq 1 50); do
+        if (echo >"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
+            return 0
+        fi
+        sleep 0.2
+    done
+    echo "ERROR: $name is not listening on port $port after 10s" >&2
+    exit 1
+}
 
 # -- Parsing arguments ---------------------------------------------------------
 NUM_RECEIVERS="${1:-1}"
@@ -45,12 +60,12 @@ echo ""
 # -- Starting AS --------------------------------------------------------------
 cargo run -p auth-service &
 PIDS+=($!)
-sleep 1
+wait_for_port 8001 "Authentication Service"
 
 # -- Starting DS (of OpenMLS) -------------------------------------------------
 (cd "$ROOT/openmls" && cargo run -p mls-ds) &
 PIDS+=($!)
-sleep 1
+wait_for_port 8080 "Delivery Service"
 
 # -- Starting creator (sets up the MLS group, delivers Welcome) ----------------
 cargo run -p mls-srtp-client -- --mode creator --senders 1 --receivers "$NUM_RECEIVERS" &
@@ -68,12 +83,12 @@ done
 sleep 2
 
 # -- Starting sender (joiner) -------------------------------------------------
-cargo run -p mls-srtp-client -- --mode sender
-SENDER_EXIT=$?
+SENDER_EXIT=0
+cargo run -p mls-srtp-client -- --mode sender || SENDER_EXIT=$?
 
 # -- Waiting for receivers to finish ------------------------------------------
 RECEIVER_EXIT=0
-for pid in "${RECEIVER_PIDS[@]}"; do
+for pid in ${RECEIVER_PIDS[@]+"${RECEIVER_PIDS[@]}"}; do
     wait "$pid" 2>/dev/null || RECEIVER_EXIT=1
 done
 
