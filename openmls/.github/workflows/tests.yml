@@ -1,0 +1,78 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'book/**'
+      - 'LICENSE*'
+      - '.gitignore'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'book/**'
+      - 'LICENSE*'
+      - '.gitignore'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Full coverage on Linux x86_64: both modes × all feature variants.
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, mode_name: debug, mode_arg: "", features_name: default, features_arg: "" }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, mode_name: release, mode_arg: --release, features_name: default, features_arg: "" }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, mode_name: debug, mode_arg: "", features_name: fork-resolution, features_arg: "-F fork-resolution" }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, mode_name: release, mode_arg: --release, features_name: fork-resolution, features_arg: "-F fork-resolution" }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, mode_name: debug, mode_arg: "", features_name: extensions-draft-08, features_arg: "-F extensions-draft-08,extensions-draft-08-test-dependencies" }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, mode_name: release, mode_arg: --release, features_name: extensions-draft-08, features_arg: "-F extensions-draft-08,extensions-draft-08-test-dependencies" }
+          # Other platforms: debug + default features only.
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, mode_name: debug, mode_arg: "", features_name: default, features_arg: "" }
+          - { os: macos-latest, target: aarch64-apple-darwin, mode_name: debug, mode_arg: "", features_name: default, features_arg: "" }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu, mode_name: debug, mode_arg: "", features_name: default, features_arg: "" }
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.target }} (${{ matrix.mode_name }}/${{ matrix.features_name }})
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Tests
+        run: cargo test ${{ matrix.mode_arg }} -p openmls --verbose --no-default-features ${{ matrix.features_arg }}
+
+  wasm:
+    runs-on: "ubuntu-latest"
+    steps:
+      # Checkout
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: Swatinem/rust-cache@v2
+
+      # Install toolchain
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      # Setup wasm bindings
+      - uses: baptiste0928/cargo-install@v3
+        with:
+          crate: wasm-bindgen-cli
+
+      - name: Tests Wasm32 on linux
+        run: |
+          export CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=$HOME/.cargo-install/wasm-bindgen-cli/bin/wasm-bindgen-test-runner
+          cargo test -p openmls -vv --target wasm32-unknown-unknown -F js,js-test
