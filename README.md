@@ -100,20 +100,20 @@ cargo run --release --package mls-srtp-core --bin memory_usage
 
 | Benchmark | What it measures | Output |
 | --- | --- | --- |
-| `srtp_throughput` | SRTP encryption/decryption throughput and latency across different payload sizes | Fig 1, 2; Table 1 |
-| `pep_throughput` | PEP (CTR / CTR+CMAC-64) throughput, for comparison | Fig 3, 4 |
-| `rekey` | MLS rekey latency (sender + receiver) across group sizes | Fig 5 |
-| `rekey_breakdown` | MLS rekey cost breakdown | Fig 6 |
-| `memory_usage` | Per-member memory across group sizes | Fig 7 |
-| `srtp_rtcp_interleaving` | RTP throughput with periodic SRTCP interleaved | Fig 8 |
-| `granularity_throughput_ideal` | Epoch/frame/packet keying under ideal in-order delivery | Fig 9, 10 |
-| `realistic_receiver` | The three granularities on the reorder-capable receiver under a disturbed network | Fig 11-17 |
+| `srtp_throughput` | SRTP encryption/decryption throughput and latency across different payload sizes | Figures 1, 2; Table 1 |
+| `pep_throughput` | PEP (CTR / CTR+CMAC-64) throughput, for comparison | Figures 3, 4 |
+| `rekey` | MLS rekey latency (sender + receiver) across group sizes | Figures 5 |
+| `rekey_breakdown` | MLS rekey cost breakdown | Figure 6 |
+| `memory_usage` | Per-member memory across group sizes | Figure 7 |
+| `srtp_rtcp_interleaving` | RTP throughput with periodic SRTCP interleaved | Figure 8 |
+| `granularity_throughput_ideal` | Epoch/frame/packet keying under ideal in-order delivery | Figures 9, 10 |
+| `realistic_receiver` | The three granularities on the reorder-capable receiver under a disturbed network | Figures 11-17 |
 | `key_derivation` | MLS key export + SRTP KDF latency | Table 3 |
 | `replay_protection` | Cost of rejecting a replayed packet | Table 1 (replay row) |
 | `ratchet_step` | The cost paid per ratchet step: deriving and installing new keys | `writeups/ratchet_step.md` |
 | `srtp_scaling` + `aes_gcm_baseline` | SRTP time vs raw AES-GCM | `writeups/fixed_cost_breakdown.md` |
 
-"Fig N" is the file `figures/figN_*.png`/`.pdf`; "Table N" is printed inside the
+"Figure N" is the file `figures/figN_*.png`/`.pdf`; "Table N" is printed inside the
 notebook (`figures_from_benches.ipynb`). The write-ups live in
 `crates/mls-srtp-core/benches/results/writeups/`.
 
@@ -156,7 +156,7 @@ SRTP-protected RTP packets over IP multicast.
 cargo test --package mls-srtp-core
 ```
 
-## Local modifications to dependencies
+## Modifications to dependencies
 
 - **`openmls/`** (copy of [openmls/openmls](https://github.com/openmls/openmls)):
   - `openmls/openmls/src/group/mls_group/processing.rs`: changed
