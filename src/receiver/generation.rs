@@ -4,7 +4,7 @@
 //! start of each epoch and selects that generation's SRTP key. Both ends must
 //! compute the same `g` for a packet, or they derive different SRTP keys.
 //! The sender gets `g` implicitly (it rekeys at each boundary it emits, see
-//! [`crate::granularity`]). However, the receiver sees packets possibly out of order,
+//! [`crate::keying::granularity`]). However, the receiver sees packets possibly out of order,
 //! so it must compute `g` from each packet's header alone. [`GenerationScheme`]
 //! is that rule, one variant per keying granularity.
 //!
@@ -17,7 +17,7 @@
 //! explicitly, plus [`crate::receiver::index_recovery::IndexRecovery`] to unwrap the
 //! 16-bit sequence number.
 
-use crate::granularity::Granularity;
+use crate::keying::granularity::Granularity;
 
 /// How a packet is mapped to its generation index `g`.
 ///

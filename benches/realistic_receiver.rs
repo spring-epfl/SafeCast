@@ -62,11 +62,11 @@ use std::time::Instant;
 
 use clap::Parser;
 
-use mls_srtp_core::granularity::Granularity;
-use mls_srtp_core::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
+use mls_srtp_core::keying::granularity::Granularity;
+use mls_srtp_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
 use mls_srtp_core::receiver::generation::GenerationScheme;
 use mls_srtp_core::receiver::{ReceiverKeyManager, RecvDrop, RecvStats};
-use mls_srtp_core::rtp::RTP_HEADER_LEN;
+use mls_srtp_core::transport::rtp::RTP_HEADER_LEN;
 use mls_srtp_core::sim::network::{disturb, LossModel, NetworkConfig, NetworkStats, PathConfig};
 use mls_srtp_core::sim::sender::{
     SimulatedSender, StreamModel, FPS, FRAME_BYTES, FRAME_PERIOD, GCM_TAG_LEN, START_TS,

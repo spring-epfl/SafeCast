@@ -3,8 +3,8 @@
 //! index stamp, the evenly paced send times, and a frame-level
 //! encrypt/decrypt round trip.
 
-use mls_srtp_core::granularity::{Granularity, RekeyingStream};
-use mls_srtp_core::ratchet::StreamRatchet;
+use mls_srtp_core::keying::granularity::{Granularity, RekeyingStream};
+use mls_srtp_core::keying::ratchet::StreamRatchet;
 use mls_srtp_core::sim::sender::{SimulatedSender, StreamModel, FPS, FRAME_PERIOD, START_TS};
 
 /// Unique identifier for the test stream.

@@ -17,8 +17,8 @@ use mls_srtp_core::mls::{
     create_rekey_commit, export_srtp_keys, process_commit, ssrc_from_identity, MlsMember,
     CIPHERSUITE,
 };
-use mls_srtp_core::rtp::RtpPacket;
-use mls_srtp_core::srtp_session::{create_receiver_session, create_sender_session};
+use mls_srtp_core::transport::rtp::RtpPacket;
+use mls_srtp_core::transport::srtp_session::{create_receiver_session, create_sender_session};
 
 use openmls::prelude::*;
 use openmls_traits::OpenMlsProvider;

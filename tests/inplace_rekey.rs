@@ -9,7 +9,7 @@
 //!      unchanged), and
 //!   2. the replay database survives the rekey (which `srtp_update` would break).
 
-use mls_srtp_core::rtp::{RtpPacket, RTP_HEADER_LEN};
+use mls_srtp_core::transport::rtp::{RtpPacket, RTP_HEADER_LEN};
 use openssl::symm::{encrypt_aead, Cipher};
 use srtp::{CryptoPolicy, Error, Session, StreamPolicy};
 

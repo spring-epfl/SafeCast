@@ -33,8 +33,8 @@ pub mod index_recovery;
 
 use self::generation::{frame_generation, GenerationScheme};
 use self::index_recovery::IndexRecovery;
-use crate::ratchet::{split_key_salt, KeySalt, StreamRatchet};
-use crate::rtp::RTP_HEADER_LEN;
+use crate::keying::ratchet::{split_key_salt, KeySalt, StreamRatchet};
+use crate::transport::rtp::RTP_HEADER_LEN;
 
 /// Why a packet was not delivered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

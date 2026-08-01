@@ -18,7 +18,7 @@ use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use mls_srtp_core::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
+use mls_srtp_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
 
 use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;

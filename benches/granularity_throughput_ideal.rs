@@ -55,9 +55,9 @@ use std::time::{Duration, Instant};
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use mls_srtp_core::granularity::{Granularity, RekeyingStream};
-use mls_srtp_core::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
-use mls_srtp_core::rtp::RTP_HEADER_LEN;
+use mls_srtp_core::keying::granularity::{Granularity, RekeyingStream};
+use mls_srtp_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
+use mls_srtp_core::transport::rtp::RTP_HEADER_LEN;
 
 /// AES-128-GCM authentication tag length in bytes (RFC 7714).
 const GCM_TAG_LEN: usize = 16;

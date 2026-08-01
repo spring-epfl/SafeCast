@@ -1,6 +1,6 @@
 //! Wiring the three keying granularities onto the ratchet + in-place rekey.
 //!
-//! A generation is the span that shares one SRTP key (see [`crate::ratchet`]).
+//! A generation is the span that shares one SRTP key (see [`crate::keying::ratchet`]).
 //! The granularity decides how long that span is:
 //!   - [`Granularity::EpochOnly`]: one key for the whole epoch (never rekey
 //!     within the epoch). This is the baseline.
@@ -25,8 +25,8 @@ use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;
 use srtp::{CryptoPolicy, Error, Session, StreamPolicy};
 
-use crate::ratchet::{split_key_salt, StreamRatchet};
-use crate::rtp::RTP_HEADER_LEN;
+use crate::keying::ratchet::{split_key_salt, StreamRatchet};
+use crate::transport::rtp::RTP_HEADER_LEN;
 
 /// Replay window size libsrtp tracks, matching srtp_session.rs (RFC 3711 §3.3.2).
 const WINDOW_SIZE: u64 = 128;

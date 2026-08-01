@@ -42,7 +42,7 @@ use openssl::pkey::PKey;
 use openssl::sign::Signer;
 use openssl::symm::Cipher as SymmCipher;
 
-use mls_srtp_core::rtp::RTP_HEADER_LEN;
+use mls_srtp_core::transport::rtp::RTP_HEADER_LEN;
 
 /// Synthetic 128-bit AES key (key value is irrelevant to AES throughput).
 const KEY: [u8; 16] = [0x01; 16];

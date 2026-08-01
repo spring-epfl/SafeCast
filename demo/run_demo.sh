@@ -96,7 +96,10 @@ echo ""
 echo "========================================="
 if [ "$SENDER_EXIT" -eq 0 ] && [ "$RECEIVER_EXIT" -eq 0 ]; then
     echo "  Demo completed successfully!"
+    DEMO_EXIT=0
 else
     echo "  Demo failed (sender=$SENDER_EXIT, receivers=$RECEIVER_EXIT)"
+    DEMO_EXIT=1
 fi
 echo "========================================="
+exit "$DEMO_EXIT"

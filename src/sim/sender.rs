@@ -18,9 +18,9 @@
 //! time, and payload bytes directly from i. This way the stream takes no
 //! memory, as storing millions of ready-made packets would take gigabytes.
 
-use crate::granularity::{Granularity, RekeyingStream};
-use crate::ratchet::StreamRatchet;
-use crate::rtp::RTP_HEADER_LEN;
+use crate::keying::granularity::{Granularity, RekeyingStream};
+use crate::keying::ratchet::StreamRatchet;
+use crate::transport::rtp::RTP_HEADER_LEN;
 
 /// AES-128-GCM authentication tag length in bytes (RFC 7714).
 /// `protect` appends this to every packet.

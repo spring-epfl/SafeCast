@@ -29,7 +29,7 @@ REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 # no matter where the script is called from
 cd "$REPO_ROOT"
 CRITERION_SRC="$REPO_ROOT/target/criterion"
-CRITERION_DST="$REPO_ROOT/crates/mls-srtp-core/benches/results/criterion"
+CRITERION_DST="$REPO_ROOT/benches/results/criterion"
 NOTEBOOK="$REPO_ROOT/figures_from_benches.ipynb"
 
 SKIP_BENCH=false
