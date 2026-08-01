@@ -4,34 +4,34 @@ members = [
     "demo/auth-service",
     "demo/mls-srtp-client",
 ]
-exclude = ["openmls"]
+exclude = ["third_party/openmls"]
 resolver = "2"
 
 [workspace.dependencies]
 # OpenMLS crates (local paths)
-openmls = { path = "openmls/openmls", features = ["test-utils"] }
-openmls_rust_crypto = { path = "openmls/openmls_rust_crypto", features = ["test-utils"] }
-openmls_basic_credential = { path = "openmls/basic_credential", features = ["clonable"] }
-openmls_traits = { path = "openmls/traits" }
+openmls = { path = "third_party/openmls/openmls", features = ["test-utils"] }
+openmls_rust_crypto = { path = "third_party/openmls/openmls_rust_crypto", features = ["test-utils"] }
+openmls_basic_credential = { path = "third_party/openmls/basic_credential", features = ["clonable"] }
+openmls_traits = { path = "third_party/openmls/traits" }
 
 # OpenMLS Delivery Service library (types for DS interaction)
-ds-lib = { path = "openmls/delivery-service/ds-lib" }
+ds-lib = { path = "third_party/openmls/delivery-service/ds-lib" }
 
 # SRTP (Rust bindings for libsrtp): our patched copy of the high-level `srtp`
-# crate (vendored in vendor/srtp), which adds Session::inplace_rekey
+# crate (vendored in third_party/srtp), which adds Session::inplace_rekey
 # (wrapping the patched libsrtp's srtp_inplace_rekey). It builds against
-# vendor/srtp2-sys, our patched copy of the low-level bindings, which
+# third_party/srtp2-sys, our patched copy of the low-level bindings, which
 # bundles libsrtp v2.8.0 instead of v2.3.0 (v2.3.0 had a SET_TAG bug
 # costing ~120 ns on every protect() call: see
 # crates/mls-srtp-core/benches/encrypt_decrypt_asymmetry/) and adds
 # srtp_inplace_rekey for the fine-grained frame/packet rekeying.
-srtp = { path = "vendor/srtp" }
+srtp = { path = "third_party/srtp" }
 # Also a dependency of mls-srtp-core: its build script compiles
 # benches/c/srtp_kdf.c (the SRTP KDF copied out of libsrtp's srtp.c),
 # which includes the config.h generated while srtp2-sys builds libsrtp.
 # The srtp2-sys build script exports that path as DEP_SRTP2_INCLUDE,
 # and Cargo only passes it to crates that depend on srtp2-sys (this one).
-srtp2-sys = { path = "vendor/srtp2-sys" }
+srtp2-sys = { path = "third_party/srtp2-sys" }
 
 # HTTP server
 actix-web = "4"

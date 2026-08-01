@@ -5,7 +5,7 @@ fn main() {
 
     // libsrtp2 headers from the vendored srtp2-sys copy
     let manifest_dir = std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    let libsrtp_dir = manifest_dir.join("../../vendor/srtp2-sys/libsrtp");
+    let libsrtp_dir = manifest_dir.join("../../third_party/srtp2-sys/libsrtp");
 
     // generated config.h location, exported by the srtp2-sys build script
     let srtp2_include = std::env::var("DEP_SRTP2_INCLUDE")

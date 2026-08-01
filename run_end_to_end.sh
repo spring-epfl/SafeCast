@@ -13,7 +13,7 @@
 #   4.  rekey                        -> Figure 5
 #   5.  rekey_breakdown              -> Figure 6
 #   6.  key_derivation               -> Table 3
-#   7.  memory_usage (binary)        -> Figure 7
+#   7.  memory_usage                 -> Figure 7
 #   8.  srtp_rtcp_interleaving       -> Figure 8
 #   9.  granularity_throughput_ideal -> Figures 9-10
 #  10.  realistic_receiver --sweep   -> Figures 11-17
@@ -81,7 +81,7 @@ if [ "$SKIP_BENCH" = false ]; then
     ok "Key derivation benchmark complete."
 
     info "Running memory usage measurement..."
-    (cd "$REPO_ROOT" && cargo run --release -p mls-srtp-core --bin memory_usage)
+    cargo bench --package mls-srtp-core --bench memory_usage
     ok "Memory usage measurement complete."
 
     info "Running SRTP/RTCP interleaving benchmark..."

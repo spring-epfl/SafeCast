@@ -54,7 +54,7 @@ echo ""
 # -- Building everything first ------------------------------------------------
 echo "=== Building all binaries ==="
 cargo build -p auth-service -p mls-srtp-client 2>&1
-(cd "$ROOT/openmls" && cargo build -p mls-ds 2>&1)
+(cd "$ROOT/third_party/openmls" && cargo build -p mls-ds 2>&1)
 echo ""
 
 # -- Starting AS --------------------------------------------------------------
@@ -63,7 +63,7 @@ PIDS+=($!)
 wait_for_port 8001 "Authentication Service"
 
 # -- Starting DS (of OpenMLS) -------------------------------------------------
-(cd "$ROOT/openmls" && cargo run -p mls-ds) &
+(cd "$ROOT/third_party/openmls" && cargo run -p mls-ds) &
 PIDS+=($!)
 wait_for_port 8080 "Delivery Service"
 

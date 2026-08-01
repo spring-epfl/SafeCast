@@ -46,8 +46,8 @@ and it is that deletion that provides forward secrecy.
 - `demo/` -- A minimal Authentication Service (`auth-service`), a
   creator/sender/receiver client (`mls-srtp-client`), and the script that
   launches the whole pipeline (`run_demo.sh`).
-- `openmls/` -- Copy of OpenMLS (with local modifications, see below).
-- `vendor/srtp`, `vendor/srtp2-sys` -- Copies of the Rust libsrtp
+- `third_party/openmls/` -- Copy of OpenMLS (with local modifications, see below).
+- `third_party/srtp`, `third_party/srtp2-sys` -- Copies of the Rust libsrtp
   bindings (with local modifications, see below).
 - `figures/` -- Generated benchmark figures (PDF/PNG) and implementation overview diagrams.
 - `figures_from_benches.ipynb` -- Jupyter notebook that generates all figures
@@ -155,20 +155,20 @@ cargo test --package mls-srtp-core
 
 ## Modifications to dependencies
 
-- **`openmls/`** (copy of [openmls/openmls](https://github.com/openmls/openmls)):
-  - `openmls/openmls/src/group/mls_group/processing.rs`: changed
+- **`third_party/openmls/`** (copy of [openmls/openmls](https://github.com/openmls/openmls)):
+  - `third_party/openmls/openmls/src/group/mls_group/processing.rs`: changed
     `process_unverified_message` visibility from `pub(crate)` to `pub`, so the
     rekey breakdown benchmark can measure the receiver's most expensive step on its
     own: verifying the commit signature and the public-key decryption of the new
     path secrets.
-  - `openmls/delivery-service/ds/src/main.rs`: fixed `send_welcome` to queue the Welcome
+  - `third_party/openmls/delivery-service/ds/src/main.rs`: fixed `send_welcome` to queue the Welcome
     for every matching client instead of returning after the first match (otherwise, 
     with multiple joiners in one commit, all but one joiner would wait forever).
-- **`vendor/srtp`** (copy of the [srtp](https://crates.io/crates/srtp) crate):
+- **`third_party/srtp`** (copy of the [srtp](https://crates.io/crates/srtp) crate):
   adds `Session::inplace_rekey`, which swaps only the key bytes of an existing
   stream without tearing down and rebuilding the whole stream (libsrtp's
   `srtp_update` rebuilds everything).
-- **`vendor/srtp2-sys`** (copy of the [srtp2-sys](https://crates.io/crates/srtp2-sys)
+- **`third_party/srtp2-sys`** (copy of the [srtp2-sys](https://crates.io/crates/srtp2-sys)
   crate): bundles libsrtp v2.8.0 instead of v2.3.0 (v2.3.0 had a SET_TAG bug
   costing ~120 ns on every `protect()`, see
   `crates/mls-srtp-core/benches/encrypt_decrypt_asymmetry/`). We also add
