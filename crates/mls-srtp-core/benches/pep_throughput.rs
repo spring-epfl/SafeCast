@@ -14,18 +14,18 @@
 //!
 //! Design notes:
 //!
-//! - **IV construction.** PEP (§20) constructs a 128-bit IV as
+//! - IV construction: PEP constructs a 128-bit IV as
 //!   `iv'_ctr = iv' || ctr`, where `iv'` is a fixed 64-bit value from
 //!   the SDP transport parameters and `ctr` is a 64-bit counter that
 //!   increments per data slice. We do the same in our benchmark: `build_iv()`
 //!   concatenates a fixed 8-byte `iv'` with a big-endian 64-bit packet
 //!   counter.
 //!
-//! - **CMAC key.** PEP (§20) uses the same privacy cipher key for both
+//! - CMAC key: PEP uses the same privacy cipher key for both
 //!   AES-CTR encryption and CMAC computation. We do the same here,
 //!   using a single synthetic key for both operations.
 //!
-//! - **Mac-then-encrypt.** For CMAC-64 modes (§20), PEP computes CMAC
+//! - Mac-then-encrypt: For CMAC-64 modes, PEP computes CMAC
 //!   over the plaintext payload, truncates to 64 bits, appends the tag,
 //!   and then encrypts (payload + tag) with AES-CTR.
 //!
@@ -213,12 +213,12 @@ fn bench_pep_ctr_decrypt(c: &mut Criterion) {
 }
 
 // -------------------------------------------------------------------------
-// AES-128-CTR_CMAC-64 (§20) — mac-then-encrypt
+// AES-128-CTR_CMAC-64 — mac-then-encrypt
 // -------------------------------------------------------------------------
 
 /// Benchmarks PEP AES-128-CTR_CMAC-64 encryption throughput.
 ///
-/// Per packet (mac-then-encrypt, §20):
+/// Per packet (mac-then-encrypt):
 ///   1. Compute AES-CMAC over the plaintext payload, truncate to 64 bits
 ///   2. Append the 8-byte MAC to the payload
 ///   3. Encrypt (payload + MAC) with AES-128-CTR
@@ -243,7 +243,7 @@ fn bench_pep_ctr_cmac_encrypt(c: &mut Criterion) {
                 let mut plain_with_mac = vec![0u8; encrypt_len];
                 let mut ciphertext = vec![0u8; encrypt_len + 16];
 
-                // CMAC signing key (same key as encryption, per §20).
+                // CMAC signing key (same key as encryption).
                 let cmac_pkey = PKey::cmac(&cmac_cipher, &KEY).unwrap();
 
                 // Setting CTR cipher algorithm and key once;
@@ -307,7 +307,7 @@ fn bench_pep_ctr_cmac_decrypt(c: &mut Criterion) {
             |b, &sz| {
                 let total_len = sz + CMAC_TAG_LEN;
 
-                // CMAC signing key (same key as encryption, per §20)
+                // CMAC signing key (same key as encryption)
                 let cmac_pkey = PKey::cmac(&cmac_cipher, &KEY).unwrap();
 
                 // arbitrary ciphertext buffer (AES and CMAC performance is

@@ -62,10 +62,10 @@
  * (with a reused EVP_CIPHER_CTX, matching libsrtp's session model) and then
  * isolates the issue:
  *
- *   TEST 1 — Overall: protect vs unprotect per-packet cost (confirms the gap).
- *   TEST 2 — Step breakdown: times each OpenSSL call individually to show
+ *   TEST 1 - Overall: protect vs unprotect per-packet cost (confirms the gap).
+ *   TEST 2 - Step breakdown: times each OpenSSL call individually to show
  *            set_aad is the only asymmetric step.
- *   TEST 3 — Isolation: splits set_aad into SET_TAG(dummy) and EVP_Cipher(AAD)
+ *   TEST 3 - Isolation: splits set_aad into SET_TAG(dummy) and EVP_Cipher(AAD)
  *            to prove SET_TAG(dummy) alone accounts for the entire difference.
  *
  * Compile:
@@ -203,7 +203,7 @@ int main(void)
     }
 
     /* ======================================================================
-     * TEST 1 — Overall protect vs unprotect timing
+     * TEST 1 - Overall protect vs unprotect timing
      *
      * Replicates libsrtp's exact calling pattern with separate sender
      * (encrypt) and receiver (decrypt) contexts, each reused across packets.
@@ -275,7 +275,7 @@ int main(void)
     }
 
     /* ======================================================================
-     * TEST 2 — Per-step breakdown (standard 1424B payload)
+     * TEST 2 - Per-step breakdown (standard 1424B payload)
      *
      * Times each OpenSSL call in the protect/unprotect sequence individually.
      * This reveals that set_aad is the only step that differs between the
@@ -390,11 +390,11 @@ int main(void)
     }
 
     /* ======================================================================
-     * TEST 3 — Isolating SET_TAG(dummy) within set_aad
+     * TEST 3 - Isolating SET_TAG(dummy) within set_aad
      *
      * The set_aad step consists of two calls:
-     *   1. EVP_CIPHER_CTX_ctrl(SET_TAG, dummy)   — set expected tag (length)
-     *   2. EVP_Cipher(ctx, NULL, aad, len)       — process the AAD
+     *   1. EVP_CIPHER_CTX_ctrl(SET_TAG, dummy)   - set expected tag (length)
+     *   2. EVP_Cipher(ctx, NULL, aad, len)       - process the AAD
      *
      * This test times each sub-call separately, proving that SET_TAG(dummy)
      * alone is responsible for the entire asymmetry.

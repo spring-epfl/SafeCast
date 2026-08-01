@@ -24,7 +24,7 @@
 //!   reflects the cost of SRTP encryption itself rather than allocator
 //!   noise.
 //!
-//! - **Payload sizes.** SMPTE ST 2110-10 defines the maximum allowed UDP
+//! - Payload sizes: SMPTE ST 2110-10 defines the maximum allowed UDP
 //!   datagram size (i.e. the UDP header + UDP payload combined).
 //!   It specifies two size classes:
 //!     - standard: max 1460 B per UDP datagram (fits a 1500 B Ethernet MTU)
@@ -41,7 +41,7 @@
 //!   These two values (1424 and 8924) are the payload sizes used by this
 //!   benchmark.
 //!
-//! - **RTP metadata.** The sequence number and timestamp are incremented
+//! - RTP metadata: The sequence number and timestamp are incremented
 //!   by 1 each packet. The timestamp is syntactic only and does not model
 //!   any real codec's packetization timing.
 

@@ -16,19 +16,19 @@
  * CALLING SEQUENCES (from libsrtp v2.8.0 srtp/srtp.c)
  * ====================================================
  * PROTECT (encrypt):
- *   1. EVP_CIPHER_CTX_ctrl(SET_IVLEN) + EVP_CipherInit_ex(iv, enc=1) — set IV
- *   2. EVP_Cipher(NULL, aad, aad_len)                                — process AAD
- *   3. EVP_Cipher(buf, buf, len)                                     — encrypt payload
- *   4. EVP_Cipher(NULL, NULL, 0)                                     — finalize
- *   5. EVP_CIPHER_CTX_ctrl(GET_TAG)                                  — retrieve generated tag
+ *   1. EVP_CIPHER_CTX_ctrl(SET_IVLEN) + EVP_CipherInit_ex(iv, enc=1) - set IV
+ *   2. EVP_Cipher(NULL, aad, aad_len)                                - process AAD
+ *   3. EVP_Cipher(buf, buf, len)                                     - encrypt payload
+ *   4. EVP_Cipher(NULL, NULL, 0)                                     - finalize
+ *   5. EVP_CIPHER_CTX_ctrl(GET_TAG)                                  - retrieve generated tag
  *
  * UNPROTECT (decrypt):
- *   1. EVP_CIPHER_CTX_ctrl(SET_IVLEN) + EVP_CipherInit_ex(iv, enc=0) — set IV
- *   2. EVP_CIPHER_CTX_ctrl(SET_TAG, dummy) + memset                  — tell OpenSSL tag length
- *   3. EVP_Cipher(NULL, aad, aad_len)                                — process AAD
- *   4. EVP_CIPHER_CTX_ctrl(SET_TAG, real_tag) + memcpy               — provide actual tag
- *   5. EVP_Cipher(buf, buf, len)                                     — decrypt payload
- *   6. EVP_Cipher(NULL, NULL, 0)                                     — finalize + verify tag
+ *   1. EVP_CIPHER_CTX_ctrl(SET_IVLEN) + EVP_CipherInit_ex(iv, enc=0) - set IV
+ *   2. EVP_CIPHER_CTX_ctrl(SET_TAG, dummy) + memset                  - tell OpenSSL tag length
+ *   3. EVP_Cipher(NULL, aad, aad_len)                                - process AAD
+ *   4. EVP_CIPHER_CTX_ctrl(SET_TAG, real_tag) + memcpy               - provide actual tag
+ *   5. EVP_Cipher(buf, buf, len)                                     - decrypt payload
+ *   6. EVP_Cipher(NULL, NULL, 0)                                     - finalize + verify tag
  *
  * EXTRA WORK IN DECRYPT
  * =====================
@@ -52,8 +52,8 @@
  *
  * THIS BENCHMARK
  * ==============
- *   TEST 1 — Overall: confirms unprotect > protect by ~20-40 ns.
- *   TEST 2 — Per-step breakdown: identifies which operations cost more.
+ *   TEST 1 - Overall: confirms unprotect > protect by ~20-40 ns.
+ *   TEST 2 - Per-step breakdown: identifies which operations cost more.
  *
  * Compile:
  *   cc -O2 -o gcm_decrypt_overhead gcm_decrypt_overhead.c \
@@ -171,7 +171,7 @@ int main(void)
     fprintf(stderr, "Timing overhead: %.1f ns\n\n", overhead_ns);
 
     /* ======================================================================
-     * TEST 1 — Overall protect vs unprotect
+     * TEST 1 - Overall protect vs unprotect
      *
      * Confirms that unprotect is slower than protect.
      * ====================================================================== */
@@ -243,7 +243,7 @@ int main(void)
     }
 
     /* ======================================================================
-     * TEST 2 — Per-step breakdown (1424B payload)
+     * TEST 2 - Per-step breakdown (1424B payload)
      *
      * Times each operation in both directions to identify which steps differ.
      * ====================================================================== */

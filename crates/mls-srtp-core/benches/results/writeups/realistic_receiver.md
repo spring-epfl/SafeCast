@@ -75,11 +75,11 @@ Sustained decrypt throughput at 1424 B:
 
 Two observations:
 
-- **Packet-level keying costs ~3.5x**: it sustains ~3.5x fewer packets
+- Packet-level keying costs ~3.5x: it sustains ~3.5x fewer packets
   per second than the other two granularities. Frame-level, by contrast,
   is indistinguishable from epoch-only: its 275 rekeys (one per frame)
   amortize to ~0.4 ns per packet, which is invisible.
-- **Disturbance does not reduce throughput**: disturbance adds no crypto
+- Disturbance does not reduce throughput: disturbance adds no crypto
   work, as every key is derived exactly once whatever the arrival order.
   Reordering only changes which packet pays the cost, which we discuss 
   further in section 3.

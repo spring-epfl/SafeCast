@@ -6,8 +6,8 @@
 //!
 //! For each of the two ST 2110-10 payload sizes (standard 1424 B and
 //! jumbo 8924 B), two benchmarks are run:
-//!   1. **Baseline:** pure `protect()` loop (no RTCP)
-//!   2. **Interleaved:** same loop, but every N-th packet triggers an
+//!   1. Baseline: pure `protect()` loop (no RTCP)
+//!   2. Interleaved: same loop, but every N-th packet triggers an
 //!      additional `protect_rtcp()` call on a 100-byte RTCP packet
 //!
 //! N is derived from the ST 2110-10 1080p60 (2.58 Gbps)
