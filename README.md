@@ -59,12 +59,12 @@ and it is that deletion that provides forward secrecy.
 
 You need a Rust toolchain and OpenSSL.
 
-1. **Rust**. Install via [rustup](https://rustup.rs):
+1. Rust: Install via [rustup](https://rustup.rs):
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    ```
 
-2. **OpenSSL.** This repo bundles the libsrtp C library and compiles it from
+2. OpenSSL: This repo bundles the libsrtp C library and compiles it from
    source as part of `cargo build`. That compilation needs OpenSSL's development
    files:
    ```bash
@@ -72,7 +72,7 @@ You need a Rust toolchain and OpenSSL.
    sudo apt install libssl-dev   # Debian / Ubuntu
    ```
 
-3. **Python 3.** Only needed to regenerate the figures from the notebook.
+3. Python 3: Only needed to regenerate the figures from the notebook.
    Requires `jupyter` and `nbconvert`:
    ```bash
    pip install jupyter nbconvert
