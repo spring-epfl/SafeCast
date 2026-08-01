@@ -59,7 +59,7 @@ socket2 = { version = "0.5", features = ["all"] }
 clap = { version = "4", features = ["derive"] }
 
 [dependencies]
-# seeded RNG for the network simulation (sim::network): ChaCha so the same
+# seeded RNG for the network simulation (simulation::network): ChaCha so the same
 # seed reproduces the same disturbed run
 rand = "0.9"
 rand_chacha = "0.9"

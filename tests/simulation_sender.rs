@@ -5,7 +5,7 @@
 
 use mls_srtp_core::keying::granularity::{Granularity, RekeyingStream};
 use mls_srtp_core::keying::ratchet::StreamRatchet;
-use mls_srtp_core::sim::sender::{SimulatedSender, StreamModel, FPS, FRAME_PERIOD, START_TS};
+use mls_srtp_core::simulation::sender::{SimulatedSender, StreamModel, FPS, FRAME_PERIOD, START_TS};
 
 /// Unique identifier for the test stream.
 const SSRC: u32 = 0x5EED_CAFE;

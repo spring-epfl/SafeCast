@@ -5,7 +5,7 @@
 //! duplicates are dropped, and a packet is lost only if both
 //! copies are lost.
 
-use mls_srtp_core::sim::network::{disturb, LossModel, NetworkConfig, PathConfig};
+use mls_srtp_core::simulation::network::{disturb, LossModel, NetworkConfig, PathConfig};
 
 /// Send times for the tests: one packet every 1000 ns. Not a realistic
 /// pacing (1424 B packets of 1080p60 leave ~4578 ns apart), and it does
