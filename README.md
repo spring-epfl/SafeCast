@@ -17,7 +17,7 @@ a single compromised key exposes, at the cost of extra key-derivation work
 (and hence lower achievable throughput).
 
 This trade-off, along with the cost of MLS rekeying and SRTP encryption/decryption, 
-is benchmarked in this repository (see the Benchmarks section below). 
+is benchmarked in this repository (see [Benchmarks](#benchmarks)). 
 A Jupyter notebook (`figures_from_benches.ipynb`) then turns the raw results into figures.
 
 ![MLS-SRTP overview](figures/mls_srtp_overview.png)
@@ -35,25 +35,36 @@ and it is that deletion that provides forward secrecy.
 
 ## Repository structure
 
-- `crates/mls-srtp-core/` -- Core library: MLS group management, SRTP key
-  derivation, the keying-granularity schemes (epoch/frame/packet), the
-  reorder-capable receiver, and the network simulation.
-- `crates/mls-srtp-core/benches/` -- All benchmarks (see the table below).
-- `crates/mls-srtp-core/benches/results/` -- Benchmark data and write-ups:
-  `criterion/` holds the raw Criterion JSON the Jupyter notebook reads, `memory_usage/`
-  and `realistic_receiver/` hold the other benchmarks' data, and `writeups/`
-  holds a write-up for some of the benchmarks.
-- `demo/` -- A minimal Authentication Service (`auth-service`), a
-  creator/sender/receiver client (`mls-srtp-client`), and the script that
-  launches the whole pipeline (`run_demo.sh`).
-- `third_party/openmls/` -- Copy of OpenMLS (with local modifications, see below).
-- `third_party/srtp`, `third_party/srtp2-sys` -- Copies of the Rust libsrtp
-  bindings (with local modifications, see below).
-- `figures/` -- Generated benchmark figures (PDF/PNG) and implementation overview diagrams.
-- `figures_from_benches.ipynb` -- Jupyter notebook that generates all figures
-  from the benchmark results.
-- `run_end_to_end.sh` -- Runs all benchmarks, copies results, and executes the
-  notebook to regenerate every figure.
+```
+MLS-SRTP/
+├── src/                          The core library
+│   ├── keying/                   MLS group management and key export, the
+│   │                             per-stream key ratchet, and the keying
+│   │                             granularities (epoch/frame/packet)
+│   ├── transport/                RTP packet handling and SRTP sessions
+│   ├── receiver/                 Reorder-capable receiver: caches the last K
+│   │                             generation keys so late packets still decrypt
+│   └── simulation/               Simulated sender + network disturbance model
+│                                 (jitter, loss, ST 2022-7 dual-path merge)
+├── benches/                      All benchmarks (see the table below)
+│   └── results/                  Benchmark data the notebook reads:
+│       ├── criterion/            - raw Criterion JSON
+│       ├── memory_usage/         - memory measurements
+│       ├── realistic_receiver/   - disturbed-network results
+│       └── writeups/             - write-ups for some benchmarks
+├── tests/                        Integration tests of the core library
+├── demo/                         Live multicast demo
+│   ├── auth-service/             - minimal Authentication Service
+│   ├── mls-srtp-client/          - creator/sender/receiver client
+│   └── run_demo.sh               - launches the whole pipeline
+├── third_party/                  Patched copies of dependencies (see below):
+│   ├── openmls/                  - OpenMLS (incl. the Delivery Service)
+│   ├── srtp/                     - safe Rust API wrapping srtp2-sys
+│   └── srtp2-sys/                - the libsrtp C library
+├── figures/                      Generated figures + overview diagrams
+├── figures_from_benches.ipynb    Jupyter notebook: benchmark results -> all figures
+└── run_end_to_end.sh             Runs all benchmarks + executes notebook to regenerate figures
+```
 
 ## Setup
 
@@ -112,7 +123,7 @@ of time, but it runs through the same `cargo bench` interface.)
 
 "Figure N" is the file `figures/figN_*.png`/`.pdf`; "Table N" is printed inside the
 notebook (`figures_from_benches.ipynb`). The write-ups live in
-`crates/mls-srtp-core/benches/results/writeups/`.
+`benches/results/writeups/`.
 
 The `realistic_receiver` benchmark evaluates the receiver under simulated network conditions:
 
@@ -171,5 +182,5 @@ cargo test --package mls-srtp-core
 - **`third_party/srtp2-sys`** (copy of the [srtp2-sys](https://crates.io/crates/srtp2-sys)
   crate): bundles libsrtp v2.8.0 instead of v2.3.0 (v2.3.0 had a SET_TAG bug
   costing ~120 ns on every `protect()`, see
-  `crates/mls-srtp-core/benches/encrypt_decrypt_asymmetry/`). We also add
+  `benches/encrypt_decrypt_asymmetry/`). We also add
   `srtp_inplace_rekey` to the bundled libsrtp, which `inplace_rekey` wraps.
