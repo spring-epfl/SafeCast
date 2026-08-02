@@ -1,0 +1,5 @@
+# Python dependencies for regenerating the figures (figures_from_benches.ipynb)
+jupyter
+nbconvert
+matplotlib
+numpy

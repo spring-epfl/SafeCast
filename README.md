@@ -83,10 +83,9 @@ You need a Rust toolchain and OpenSSL.
    sudo apt install libssl-dev   # Debian / Ubuntu
    ```
 
-3. Python 3: Only needed to regenerate the figures from the notebook.
-   Requires `jupyter` and `nbconvert`:
+3. Python dependencies: Only needed to regenerate the figures from the notebook.
    ```bash
-   pip install jupyter nbconvert
+   pip install -r requirements.txt
    ```
 
 Once Rust and OpenSSL are in place, `cargo build` compiles everything.
