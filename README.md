@@ -96,6 +96,7 @@ Run all benchmarks and regenerate every figure in one go:
 ```bash
 ./run_end_to_end.sh
 ```
+The full run takes about 2.5 hours.
 
 Or run a single benchmark:
 ```bash
