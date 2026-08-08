@@ -63,6 +63,12 @@ clap = { version = "4", features = ["derive"] }
 # seed reproduces the same disturbed run
 rand = "0.9"
 rand_chacha = "0.9"
+
+# TESLA primitives
+hmac = "0.12"
+sha2 = "0.10"
+aes-gcm = "0.10"
+
 openmls = { workspace = true }
 openmls_rust_crypto = { workspace = true }
 openmls_basic_credential = { workspace = true }
