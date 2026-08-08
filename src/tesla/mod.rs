@@ -28,6 +28,8 @@ pub mod chain;
 pub mod mac;
 /// Disclosure schedule parameters and the receiver's accept test.
 pub mod params;
+/// The sender: tags outgoing packets and discloses "expired" keys.
+pub mod sender;
 
 use chain::{ChainKey, TESLA_KEY_LEN};
 use mac::TESLA_MAC_LEN;
