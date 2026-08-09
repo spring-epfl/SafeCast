@@ -24,6 +24,9 @@
 
 /// The one-way key chain.
 pub mod chain;
+/// The signed commitment: the anchor and schedule, under the sender's MLS
+/// leaf key.
+pub mod commitment;
 /// The TESLA MAC.
 pub mod mac;
 /// The disclosure schedule and the receiver's accept test.
