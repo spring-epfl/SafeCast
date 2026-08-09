@@ -5,24 +5,33 @@
 //! packet ends up with the right verdict, such as "verified" or "forged".
 
 use mls_srtp_core::keying::granularity::Granularity;
+use mls_srtp_core::keying::mls::{ssrc_from_identity, MlsMember, CIPHERSUITE};
 use mls_srtp_core::keying::ratchet::StreamRatchet;
 use mls_srtp_core::receiver::generation::GenerationScheme;
 use mls_srtp_core::receiver::ReceiverKeyManager;
 use mls_srtp_core::simulation::sender::{SimulatedSender, StreamModel};
+use mls_srtp_core::tesla::commitment::TeslaCommitment;
 use mls_srtp_core::tesla::mac::TeslaMacAlg;
 use mls_srtp_core::tesla::schedule::TeslaSchedule;
 use mls_srtp_core::tesla::receiver::{TeslaDrop, TeslaReceiver};
 use mls_srtp_core::tesla::sender::TeslaSender;
+use openmls::prelude::*;
+use openmls_traits::OpenMlsProvider;
 
-/// A fixed ratchet seed: sender and receiver must derive the same SRTP
-/// keys.
-const SEED: u8 = 42;
-const SSRC: u32 = 0x1234;
+/// The two group members: the sender creates the group, the receiver
+/// joins via Welcome.
+const SENDER_ID: &str = "camera-1:sender";
+const RECEIVER_ID: &str = "screen-2:receiver";
+
+/// The sender's stream identifier, derived from its identity.
+fn ssrc() -> u32 {
+    ssrc_from_identity(SENDER_ID)
+}
 
 /// The stream: 100-byte payloads, sent one every ~321 ns (the model's
 /// 1080p60 pacing at that payload size).
 fn model() -> StreamModel {
-    StreamModel::new(100, SSRC)
+    StreamModel::new(100, ssrc())
 }
 
 /// The schedule: 1 us intervals (a few packets per interval at the
@@ -31,29 +40,115 @@ fn params() -> TeslaSchedule {
     TeslaSchedule::new(0, 1_000, 2, 64, 0, 16)
 }
 
-/// One sender + one receiver.
+/// A two-member MLS group: the sender creates it, the receiver
+/// joins via Welcome. Returns each side's own view of the group together
+/// with its member state (crypto provider + signing key).
+fn setup_group() -> ((MlsGroup, MlsMember), (MlsGroup, MlsMember)) {
+    let sender = MlsMember::new(SENDER_ID);
+    let receiver = MlsMember::new(RECEIVER_ID);
+    // the ratchet tree rides in the Welcome so the joiner needs no
+    // extra fetches
+    let config = MlsGroupCreateConfig::builder()
+        .ciphersuite(CIPHERSUITE)
+        .use_ratchet_tree_extension(true)
+        .build();
+    // the sender creates the group...
+    let mut sender_group = MlsGroup::new(
+        &sender.provider,
+        &sender.signer,
+        &config,
+        sender.credential_with_key.clone(),
+    )
+    .expect("failed to create group");
+    // ...and adds the receiver
+    let kp = receiver.generate_key_package().key_package().clone();
+    let (_commit, welcome, _) = sender_group
+        .add_members(&sender.provider, &sender.signer, &[kp])
+        .expect("add_members failed");
+    sender_group
+        .merge_pending_commit(&sender.provider)
+        .expect("merge_pending_commit failed");
+    // the receiver joins from the Welcome
+    let welcome_in: MlsMessageIn = welcome.into();
+    let welcome_msg = welcome_in.into_welcome().expect("expected Welcome");
+    let tree = sender_group.export_ratchet_tree();
+    let receiver_group = StagedWelcome::new_from_welcome(
+        &receiver.provider,
+        config.join_config(),
+        welcome_msg,
+        Some(tree.into()),
+    )
+    .expect("welcome failed")
+    .into_group(&receiver.provider)
+    .expect("into_group failed");
+    ((sender_group, sender), (receiver_group, receiver))
+}
+
+/// One sender + one receiver, bootstrapped through MLS: the SRTP
+/// keys come from each side's own group exporter, the commitment is
+/// signed with the sender's MLS leaf key, and the receiver takes the
+/// sender's public key from its own view of the group tree.
 fn setup() -> (SimulatedSender, TeslaSender, TeslaReceiver) {
-    let ratchet = |b| StreamRatchet::from_seed(vec![b; 32]);
+    let ((sender_group, sender_member), (receiver_group, receiver_member)) = setup_group();
+    let p = params();
+
+    // both sides derive the SRTP ratchet from their own group view
+    let tx_ratchet =
+        StreamRatchet::seed_from_exporter(&sender_group, sender_member.provider.crypto(), ssrc());
+    let rx_ratchet = StreamRatchet::seed_from_exporter(
+        &receiver_group,
+        receiver_member.provider.crypto(),
+        ssrc(),
+    );
+
     // the media sender: encrypts the modeled stream in send order
-    let srtp_sender = SimulatedSender::new(model(), Granularity::EpochOnly, ratchet(SEED));
+    let srtp_sender = SimulatedSender::new(model(), Granularity::EpochOnly, tx_ratchet);
     // the TESLA sender: builds its private chain, tags every packet
-    let tesla_sender = TeslaSender::new(params(), TeslaMacAlg::HmacSha256);
-    // the SRTP receiver, from the same ratchet seed
+    let tesla_sender = TeslaSender::new(p, TeslaMacAlg::HmacSha256);
+
+    // the sender publishes its commitment, signed with its MLS leaf key
+    let commitment = TeslaCommitment {
+        anchor: *tesla_sender.anchor(),
+        t0_ns: p.t0_ns,
+        t_int_ns: p.t_int_ns,
+        d: p.d,
+        n_chain: p.n_chain,
+        mac_alg: TeslaMacAlg::HmacSha256,
+        sender_identity: SENDER_ID.as_bytes().to_vec(),
+        ssrc: ssrc(),
+        group_id: sender_group.group_id().as_slice().to_vec(),
+        epoch: sender_group.epoch().as_u64(),
+    };
+    let signature = commitment.sign(&sender_member.signer);
+
+    // the receiver takes the sender's public key from its own view of the
+    // group tree
+    let sender_leaf_key = receiver_group
+        .members()
+        .find(|m| m.credential.serialized_content() == SENDER_ID.as_bytes())
+        .expect("sender must be in the receiver's group view")
+        .signature_key;
+
+    // the SRTP receiver, keyed from the receiver's own exporter seed
     let inner = ReceiverKeyManager::new(
         GenerationScheme::EpochOnly,
-        SSRC,
-        ratchet(SEED),
+        ssrc(),
+        rx_ratchet,
         1,    // key window: epoch-only has a single generation
         4096, // seek cap (not used at epoch-only)
         0,    // libsrtp's default replay window
     );
-    // the TESLA receiver around it
-    let tesla_receiver = TeslaReceiver::new(
-        params(),
-        *tesla_sender.anchor(),
-        TeslaMacAlg::HmacSha256,
+    // the TESLA receiver, constructible from the verified commitment
+    let tesla_receiver = TeslaReceiver::accept(
+        &commitment,
+        &signature,
+        &sender_leaf_key,
+        receiver_member.provider.crypto(),
+        p.d_t_ns,
+        p.g_max,
         inner,
-    );
+    )
+    .expect("the commitment must verify");
     (srtp_sender, tesla_sender, tesla_receiver)
 }
 
