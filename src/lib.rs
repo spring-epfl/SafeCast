@@ -22,8 +22,12 @@
 //!   - [`simulation`]: simulation of realistic delivery (reordering,
 //!     loss) for benchmarking the keying granularities under a disturbed
 //!     network instead of ideal in-order delivery
+//!
+//! Source authentication:
+//!   - [`tesla`]: TESLA-style per-sender authentication (RFC 4082/4383)
 
 pub mod keying;
 pub mod receiver;
 pub mod simulation;
+pub mod tesla;
 pub mod transport;

@@ -63,6 +63,13 @@ clap = { version = "4", features = ["derive"] }
 # seed reproduces the same disturbed run
 rand = "0.9"
 rand_chacha = "0.9"
+
+# TESLA primitives: HMAC-SHA256 for the chain and the baseline MAC,
+# OpenSSL for the GMAC variant
+hmac = "0.12"
+sha2 = { version = "0.10", features = ["asm"] }
+openssl = "0.10"
+
 openmls = { workspace = true }
 openmls_rust_crypto = { workspace = true }
 openmls_basic_credential = { workspace = true }
@@ -79,7 +86,6 @@ pkg-config = "0.3"
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 clap = { workspace = true }
-openssl = "0.10"
 
 [[bench]]
 name = "replay_protection"
@@ -146,4 +152,10 @@ harness = false
 [[bench]]
 name = "memory_usage"
 path = "benches/memory_usage.rs"
+harness = false
+
+# TESLA's per-packet cost on top of SRTP, both directions.
+[[bench]]
+name = "tesla_throughput"
+path = "benches/tesla_throughput.rs"
 harness = false
