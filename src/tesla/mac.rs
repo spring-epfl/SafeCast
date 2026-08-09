@@ -1,8 +1,7 @@
 //! The TESLA MAC: the tag each packet carries under its interval's
-//! still-secret key. Two interchangeable algorithms:
+//! secret key. Two interchangeable algorithms:
 //!
-//! - HMAC-SHA256: one hash pass over the packet. The straightforward
-//!   choice.
+//! - HMAC-SHA256
 //! - GMAC: AES-GCM run with no plaintext, so only its authentication part
 //!   executes. Backed by OpenSSL, whose GHASH ran about 4x faster than
 //!   the RustCrypto implementation when both were measured (tests/micro_mac.rs).
@@ -11,11 +10,10 @@
 //!
 //! What the tag covers: every byte of the packet plus its ROC. The header's
 //! sequence number is 16-bit and wraps, so packet n and packet n + 65,536
-//! have byte-identical headers. If the tag did not cover it, a
+//! have identical headers. If the tag did not cover it, a
 //! recorded packet could be replayed one wrap later and its tag would
 //! still verify.
 //!
-//! Key setup is split out into `prepare`, run once per interval.
 
 use hmac::{Hmac, Mac};
 use openssl::cipher::Cipher;
