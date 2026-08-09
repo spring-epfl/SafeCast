@@ -28,19 +28,18 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;
 
-/// The payload sweep. The two MTU-anchored entries
-/// are the TESLA-safe variants (1424 - 34 = 1390 B,
-/// 8924 - 34 = 8890 B): with the 34-byte extension on top, the full
-/// datagram still fits the MTU.
+/// The payload sweep. TESLA appends a 34-byte extension to every packet,
+/// so the two MTU-anchored payloads shrink by 34 bytes (1424 -> 1390 B,
+/// 8924 -> 8890 B) for the packet to still fit the MTU.
 const PAYLOADS: [usize; 15] = [
     16, 32, 40, 64, 128, 160, 256, 512, 800, 1024, 1200, 1390, 2048, 4096, 8890,
 ];
 
 /// Packets measured per variant.
-const PACKETS: u64 = 100_000;
+const PACKETS: u64 = 1_000_000;
 
 /// Leading packets whose times are discarded (caches, branch predictors).
-const WARMUP: usize = 5_000;
+const WARMUP: usize = 50_000;
 
 /// Receiver-side packets are produced in slices of this many.
 const BATCH: u64 = 4_096;
@@ -57,7 +56,7 @@ const SSRC: u32 = 0x5454;
 
 /// The TESLA schedule: 1 ms intervals, disclosure delay d = 2. The chain
 /// needs one key per 1 ms interval of the run, and how many 1 ms
-/// intervals the run's 100k packets fall into depends on how fast the
+/// intervals the run's 1_000_000 packets fall into depends on how fast the
 /// model sends them: jumbo packets leave ~29 us apart, so the run
 /// stretches over ~3 seconds = ~3000 intervals. Small packets leave
 /// under 1 us apart, so the run fits in a few intervals total. Hence the
@@ -93,6 +92,7 @@ struct Stats {
     mean_ns: f64,
     p50_ns: u64,
     p99_ns: u64,
+    p99_9_ns: u64,
     max_ns: u64,
 }
 
@@ -107,6 +107,7 @@ fn reduce(mut samples: Vec<u64>) -> Stats {
         mean_ns,
         p50_ns: pct(0.50),
         p99_ns: pct(0.99),
+        p99_9_ns: pct(0.999),
         // the largest value sits at the end of the sorted vec
         max_ns: *samples.last().unwrap(),
     }
@@ -269,7 +270,7 @@ fn main() {
     // every measured variant below appends one row
     let dir = "benches/results/tesla_throughput";
     fs::create_dir_all(dir).expect("cannot create results dir");
-    let mut csv = String::from("side,mac,payload,packets,warmup,mean_ns,p50_ns,p99_ns,max_ns,gbps\n");
+    let mut csv = String::from("side,mac,payload,packets,warmup,mean_ns,p50_ns,p99_ns,p99_9_ns,max_ns,gbps\n");
 
     // each side (sender/receiver) runs three times: without TESLA
     // ("none", the baseline) and with TESLA under each MAC algorithm
@@ -288,7 +289,7 @@ fn main() {
             ("receiver", false),
         ] {
             for (mac_name, mac) in macs {
-                // the measurement itself: one full run of 100k packets
+                // the measurement itself: one full run of 1_000_000 packets
                 let st = if run {
                     run_sender(&model, mac)
                 } else {
@@ -297,13 +298,13 @@ fn main() {
                 // the throughput
                 let g = gbps(payload, st.mean_ns);
                 println!(
-                    "  {side:8} {mac_name:4}  mean {:8.1} ns  p50 {:6} ns  p99 {:6} ns  max {:8} ns  {g:6.2} Gbit/s",
-                    st.mean_ns, st.p50_ns, st.p99_ns, st.max_ns
+                    "  {side:8} {mac_name:4}  mean {:8.1} ns  p50 {:6} ns  p99 {:6} ns  p99.9 {:7} ns  max {:8} ns  {g:6.2} Gbit/s",
+                    st.mean_ns, st.p50_ns, st.p99_ns, st.p99_9_ns, st.max_ns
                 );
                 // one CSV row per variant
                 csv.push_str(&format!(
-                    "{side},{mac_name},{payload},{PACKETS},{WARMUP},{:.1},{},{},{},{:.3}\n",
-                    st.mean_ns, st.p50_ns, st.p99_ns, st.max_ns, g
+                    "{side},{mac_name},{payload},{PACKETS},{WARMUP},{:.1},{},{},{},{},{:.3}\n",
+                    st.mean_ns, st.p50_ns, st.p99_ns, st.p99_9_ns, st.max_ns, g
                 ));
             }
         }
