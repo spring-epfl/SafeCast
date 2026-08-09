@@ -240,7 +240,7 @@ impl TeslaReceiver {
                 continue;
             };
             // the key setup once per interval, then one MAC per packet
-            let prepared = self.alg.prepare(key);
+            let mut prepared = self.alg.prepare(key);
             for entry in entries {
                 if prepared.tag(entry.ext_index, &entry.covered) == entry.mac {
                     // the MAC matches: only the sender could have written

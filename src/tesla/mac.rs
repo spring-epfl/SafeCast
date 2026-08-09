@@ -4,7 +4,8 @@
 //! - HMAC-SHA256: one hash pass over the packet. The straightforward
 //!   choice.
 //! - GMAC: AES-GCM run with no plaintext, so only its authentication part
-//!   executes. Potentially much faster, since AES has hardware support.
+//!   executes. Backed by OpenSSL, whose GHASH ran about 4x faster than
+//!   the RustCrypto implementation when both were measured (tests/micro_mac.rs).
 //!
 //! Both tags are cut to the spec's 10 bytes.
 //!
@@ -16,9 +17,9 @@
 //!
 //! Key setup is split out into `prepare`, run once per interval.
 
-use aes_gcm::aead::AeadInPlace;
-use aes_gcm::{Aes128Gcm, KeyInit, Nonce};
 use hmac::{Hmac, Mac};
+use openssl::cipher::Cipher;
+use openssl::cipher_ctx::CipherCtx;
 use sha2::Sha256;
 
 use crate::tesla::chain::{mac_key, ChainKey};
@@ -56,10 +57,14 @@ impl TeslaMacAlg {
                 <Hmac<Sha256> as Mac>::new_from_slice(&key)
                     .expect("HMAC accepts any key length"),
             ),
-            // keying the AES cipher
-            TeslaMacAlg::GmacAes128 => PreparedMac::Gmac(
-                Aes128Gcm::new_from_slice(&key).expect("F' output is exactly 16 bytes"),
-            ),
+            // keying the AES-GCM context: the key schedule runs here,
+            // once (per-packet tag() calls only set a fresh nonce)
+            TeslaMacAlg::GmacAes128 => {
+                let mut ctx = CipherCtx::new().expect("CipherCtx::new failed");
+                ctx.encrypt_init(Some(Cipher::aes_128_gcm()), Some(&key), None)
+                    .expect("GCM key init failed");
+                PreparedMac::Gmac(ctx)
+            }
         }
     }
 }
@@ -68,17 +73,16 @@ impl TeslaMacAlg {
 /// runs. Each variant holds its keyed object: for HMAC a hash state with the key
 /// already absorbed, for GMAC an AES cipher with the key schedule already
 /// run. [`Self::tag`] then only does the per-packet work.
-#[derive(Clone)]
 pub enum PreparedMac {
     Hmac(Hmac<Sha256>),
-    Gmac(Aes128Gcm),
+    Gmac(CipherCtx),
 }
 
 impl PreparedMac {
 
     /// Tags one packet: `packet` is every byte before the TESLA extension,
     /// `ext_index` the packet's full index.
-    pub fn tag(&self, ext_index: u64, packet: &[u8]) -> [u8; TESLA_MAC_LEN] {
+    pub fn tag(&mut self, ext_index: u64, packet: &[u8]) -> [u8; TESLA_MAC_LEN] {
         // the 10-byte output, filled by whichever branch runs
         let mut tag = [0u8; TESLA_MAC_LEN];
 
@@ -97,16 +101,21 @@ impl PreparedMac {
                 // cutting the 32-byte HMAC output down to the 10-byte tag
                 tag.copy_from_slice(&h.finalize().into_bytes()[..TESLA_MAC_LEN]);
             }
-            PreparedMac::Gmac(cipher) => {
+            PreparedMac::Gmac(ctx) => {
                 // the packet's full position as the 96-bit nonce
                 let mut nonce = [0u8; 12];
                 nonce[4..].copy_from_slice(&ext_index.to_be_bytes());
-                // encrypting an empty buffer with the packet as associated
-                // data runs only GCM's authentication part
-                let full = cipher
-                    .encrypt_in_place_detached(Nonce::from_slice(&nonce), packet, &mut [])
-                    .expect("GCM encrypt of empty plaintext cannot fail");
-                // cutting the 16-byte GCM tag down to the 10-byte tag
+                // re-initializing only the nonce: the key schedule from
+                // prepare() is kept
+                ctx.encrypt_init(None, None, Some(&nonce))
+                    .expect("GCM nonce init failed");
+                // feeding the packet as associated data (no plaintext), so
+                // only GCM's authentication part runs
+                ctx.cipher_update(packet, None).expect("GCM aad failed");
+                ctx.cipher_final(&mut []).expect("GCM final failed");
+                // the 16-byte GCM tag, cut down to the 10-byte tag
+                let mut full = [0u8; 16];
+                ctx.tag(&mut full).expect("GCM tag failed");
                 tag.copy_from_slice(&full[..TESLA_MAC_LEN]);
             }
         }
@@ -136,7 +145,7 @@ mod tests {
         // every property must hold for both algorithms
         for alg in algs() {
             // the reference tag: index 7, the packet above
-            let p = alg.prepare(&chain_key);
+            let mut p = alg.prepare(&chain_key);
             let t = p.tag(7, &packet);
             // recomputing with identical inputs gives the identical tag
             assert_eq!(t, p.tag(7, &packet), "{alg:?} must be deterministic");
@@ -158,7 +167,7 @@ mod tests {
             );
 
             // a different interval key changes the tag
-            let p2 = alg.prepare(&[6u8; TESLA_KEY_LEN]);
+            let mut p2 = alg.prepare(&[6u8; TESLA_KEY_LEN]);
             assert_ne!(t, p2.tag(7, &packet), "{alg:?} must bind the key");
         }
     }
