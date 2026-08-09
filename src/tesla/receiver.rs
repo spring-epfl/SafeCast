@@ -25,7 +25,10 @@ use std::collections::BTreeMap;
 
 use crate::receiver::index_recovery::IndexRecovery;
 use crate::receiver::{ReceiverKeyManager, RecvDrop};
+use openmls_traits::crypto::OpenMlsCrypto;
+
 use crate::tesla::chain::{ChainKey, ChainVerifier, Disclosure};
+use crate::tesla::commitment::TeslaCommitment;
 use crate::tesla::mac::{TeslaMacAlg, TESLA_MAC_LEN};
 use crate::tesla::schedule::{IntervalCheck, TeslaSchedule};
 use crate::tesla::split_extension;
@@ -98,24 +101,38 @@ pub struct TeslaReceiver {
 }
 
 impl TeslaReceiver {
-    /// Creates the receiver. `anchor` is the sender's K_0 (from the signed
-    /// commitment), `inner` is the SRTP receiver.
-    pub fn new(
-        params: TeslaSchedule,
-        anchor: ChainKey,
-        alg: TeslaMacAlg,
+    /// The only way to build a receiver: from the sender's signed
+    /// commitment. The signature is verified here, and the anchor, the
+    /// schedule and the MAC algorithm are all taken from the commitment,
+    /// so a receiver for an unverified stream cannot exist. `d_t_ns` and
+    /// `g_max` are the two receiver-local values (the clock bound
+    /// and the hash-work cap). `inner` is the SRTP
+    /// receiver. Returns `None` if the signature does not check out.
+    pub fn accept(
+        commitment: &TeslaCommitment,
+        signature: &[u8],
+        sender_public_key: &[u8],
+        crypto: &impl OpenMlsCrypto,
+        d_t_ns: u64,
+        g_max: u32,
         inner: ReceiverKeyManager,
-    ) -> Self {
-        TeslaReceiver {
+    ) -> Option<Self> {
+        // refusing anything whose signature does not check out
+        if !commitment.verify(signature, sender_public_key, crypto) {
+            return None;
+        }
+        // everything else comes from the now-trusted commitment
+        let params = commitment.schedule(d_t_ns, g_max);
+        Some(TeslaReceiver {
             params,
-            verifier: ChainVerifier::new(anchor, params.n_chain, params.g_max),
-            alg,
+            verifier: ChainVerifier::new(commitment.anchor, params.n_chain, params.g_max),
+            alg: commitment.mac_alg,
             inner,
             recovery: IndexRecovery::default(),
             drawers: BTreeMap::new(),
             pending: 0,
             stats: TeslaStats::default(),
-        }
+        })
     }
 
     /// Everything the receiver did so far.
