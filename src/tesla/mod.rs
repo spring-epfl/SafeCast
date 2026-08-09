@@ -28,6 +28,8 @@ pub mod chain;
 pub mod mac;
 /// Disclosure schedule parameters and the receiver's accept test.
 pub mod params;
+/// The receiver: buffers delivered packets and verifies them on disclosure.
+pub mod receiver;
 /// The sender: tags outgoing packets and discloses "expired" keys.
 pub mod sender;
 
