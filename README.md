@@ -16,6 +16,17 @@ evaluates fine-grained, within-epoch keying. Finer keying shrinks how much media
 a single compromised key exposes, at the cost of extra key-derivation work 
 (and hence lower achievable throughput).
 
+It also adds and evaluates per-sender source authentication:
+the shared group key only proves that *some* member sent a packet, so any
+member could forge traffic as any other. The classic fix, signing every
+packet, is too slow at media packet rates. This gap is instead closed 
+with an implementation of TESLA. In TESLA, the sender tags every packet 
+with a fast MAC under a key that only the sender knows, and reveals 
+that key a few milliseconds later. Receivers hold each packet
+briefly and check its tag once the key is out. A valid tag then proves
+the packet came from the sender, because when the packet arrived, nobody
+else could have known the key it was tagged with.
+
 This trade-off, along with the cost of MLS rekeying and SRTP encryption/decryption, 
 is benchmarked in this repository (see [Benchmarks](#benchmarks)). 
 A Jupyter notebook (`figures_from_benches.ipynb`) then turns the raw results into figures.
@@ -44,13 +55,15 @@ MLS-SRTP/
 │   ├── transport/                RTP packet handling and SRTP sessions
 │   ├── receiver/                 Reorder-capable receiver: caches the last K
 │   │                             generation keys so late packets still decrypt
-│   └── simulation/               Simulated sender + network disturbance model
-│                                 (jitter, loss, ST 2022-7 dual-path merge)
+│   ├── simulation/               Simulated sender + network disturbance model
+│   │                             (jitter, loss, ST 2022-7 dual-path merge)
+│   └── tesla/                    TESLA per-sender source authentication
 ├── benches/                      All benchmarks (see the table below)
 │   └── results/                  Benchmark data the notebook reads:
 │       ├── criterion/            - raw Criterion JSON
 │       ├── memory_usage/         - memory measurements
 │       ├── realistic_receiver/   - disturbed-network results
+│       ├── tesla_throughput/     - TESLA cost results
 │       └── writeups/             - write-ups for some benchmarks
 ├── tests/                        Integration tests of the core library
 ├── demo/                         Live multicast demo
@@ -103,9 +116,6 @@ Or run a single benchmark:
 cargo bench --package mls-srtp-core --bench <name>
 ```
 
-(`memory_usage` is the only one not built on Criterion as it measures memory instead
-of time, but it runs through the same `cargo bench` interface.)
-
 | Benchmark | What it measures | Output |
 | --- | --- | --- |
 | `srtp_throughput` | SRTP encryption/decryption throughput and latency across different payload sizes | Figures 1, 2; Table 1 |
@@ -116,6 +126,7 @@ of time, but it runs through the same `cargo bench` interface.)
 | `srtp_rtcp_interleaving` | RTP throughput with periodic SRTCP interleaved | Figure 8 |
 | `granularity_throughput_ideal` | Epoch/frame/packet keying under ideal in-order delivery | Figures 9, 10 |
 | `realistic_receiver` | The three granularities on the reorder-capable receiver under a disturbed network | Figures 11-17 |
+| `tesla_throughput` | TESLA per-sender authentication cost on top of SRTP, both directions | Figures 18, 19; `writeups/tesla_throughput.md` |
 | `key_derivation` | MLS key export + SRTP KDF latency | Table 3 |
 | `replay_protection` | Cost of rejecting a replayed packet | Table 1 (replay row) |
 | `ratchet_step` | The cost paid per ratchet step: deriving and installing new keys | `writeups/ratchet_step.md` |
