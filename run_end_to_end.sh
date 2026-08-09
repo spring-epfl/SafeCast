@@ -17,6 +17,7 @@
 #   8.  srtp_rtcp_interleaving       -> Figure 8
 #   9.  granularity_throughput_ideal -> Figures 9-10
 #  10.  realistic_receiver --sweep   -> Figures 11-17
+#  11.  tesla_throughput             -> Figures 18-19
 #
 # Usage:
 #   ./run_end_to_end.sh              # run everything
@@ -95,6 +96,10 @@ if [ "$SKIP_BENCH" = false ]; then
     info "Running realistic receiver sweep..."
     cargo bench --package mls-srtp-core --bench realistic_receiver -- --sweep
     ok "Realistic receiver sweep complete."
+
+    info "Running TESLA throughput benchmark..."
+    cargo bench --package mls-srtp-core --bench tesla_throughput
+    ok "TESLA throughput benchmark complete."
 
 fi
 
