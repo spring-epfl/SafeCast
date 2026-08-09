@@ -12,13 +12,13 @@
 
 use crate::tesla::chain::{ChainKey, TeslaChain};
 use crate::tesla::mac::{PreparedMac, TeslaMacAlg};
-use crate::tesla::params::TeslaParams;
+use crate::tesla::schedule::TeslaSchedule;
 use crate::tesla::append_extension;
 
 /// The sender's TESLA state for one stream.
 pub struct TeslaSender {
     /// The schedule (intervals, disclosure delay).
-    params: TeslaParams,
+    params: TeslaSchedule,
     /// The full key chain, K_0..=K_n_chain.
     chain: TeslaChain,
     /// Which MAC algorithm tags the packets.
@@ -32,7 +32,7 @@ pub struct TeslaSender {
 impl TeslaSender {
     /// Creates the sender: builds a fresh private chain sized to the
     /// schedule and prepares interval 1's MAC state.
-    pub fn new(params: TeslaParams, alg: TeslaMacAlg) -> Self {
+    pub fn new(params: TeslaSchedule, alg: TeslaMacAlg) -> Self {
         // the chain is generated here from a random value
         let chain = TeslaChain::generate(params.n_chain);
         // the stream starts in interval 1, so its MAC state is set up first
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn receiver_can_verify_sender_output() {
         // 1 ms intervals, d = 2, a 10-interval chain
-        let params = TeslaParams::new(0, 1_000_000, 2, 10, 0, 16);
+        let params = TeslaSchedule::new(0, 1_000_000, 2, 10, 0, 16);
         let mut sender = TeslaSender::new(params, TeslaMacAlg::HmacSha256);
         // the receiver's side of the chain, started from the anchor
         let mut verifier = ChainVerifier::new(*sender.anchor(), 10, 16);

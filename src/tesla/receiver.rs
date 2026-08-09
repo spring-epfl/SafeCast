@@ -27,7 +27,7 @@ use crate::receiver::index_recovery::IndexRecovery;
 use crate::receiver::{ReceiverKeyManager, RecvDrop};
 use crate::tesla::chain::{ChainKey, ChainVerifier, Disclosure};
 use crate::tesla::mac::{TeslaMacAlg, TESLA_MAC_LEN};
-use crate::tesla::params::{IntervalCheck, TeslaParams};
+use crate::tesla::schedule::{IntervalCheck, TeslaSchedule};
 use crate::tesla::split_extension;
 use crate::transport::rtp::RTP_HEADER_LEN;
 
@@ -80,7 +80,7 @@ struct DrawerEntry {
 /// The TESLA receiver for one stream, wrapped around the SRTP receiver.
 pub struct TeslaReceiver {
     /// The schedule and the accept test.
-    params: TeslaParams,
+    params: TeslaSchedule,
     /// The chain state: checks disclosed keys against the chain.
     verifier: ChainVerifier,
     /// Which MAC algorithm to use.
@@ -101,7 +101,7 @@ impl TeslaReceiver {
     /// Creates the receiver. `anchor` is the sender's K_0 (from the signed
     /// commitment), `inner` is the SRTP receiver.
     pub fn new(
-        params: TeslaParams,
+        params: TeslaSchedule,
         anchor: ChainKey,
         alg: TeslaMacAlg,
         inner: ReceiverKeyManager,

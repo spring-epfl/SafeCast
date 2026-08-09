@@ -10,7 +10,7 @@
 //! is disclosed.
 //!
 //! The pieces, one submodule each:
-//!   - [`params`]: the timetable. Time is sliced into numbered intervals,
+//!   - [`schedule`]: the timetable. Time is sliced into numbered intervals,
 //!     each with its own key, and every key has a known "publication" moment.
 //!     Holds the receiver's per-packet test "could this packet's key
 //!     already be public?" (which is the question all of TESLA's security rests on).
@@ -26,8 +26,8 @@
 pub mod chain;
 /// The TESLA MAC.
 pub mod mac;
-/// Disclosure schedule parameters and the receiver's accept test.
-pub mod params;
+/// The disclosure schedule and the receiver's accept test.
+pub mod schedule;
 /// The receiver: buffers delivered packets and verifies them on disclosure.
 pub mod receiver;
 /// The sender: tags outgoing packets and discloses "expired" keys.

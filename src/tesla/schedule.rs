@@ -1,5 +1,5 @@
-//! TESLA disclosure-schedule parameters and the receiver's per-packet
-//! accept test.
+//! The TESLA disclosure schedule and the receiver's per-packet accept
+//! test.
 //!
 //! The sender slices its stream into short, equal time slots
 //! called intervals, numbered 1, 2, 3, ... Each interval has its own MAC
@@ -27,12 +27,12 @@ pub enum IntervalCheck {
     UnsafeLate,
 }
 
-/// The TESLA parameters of one stream: the interval timetable (when they
+/// The TESLA schedule of one stream: the interval timetable (when they
 /// start, how long they last, how many exist), the disclosure delay d,
 /// the clock bound D_t the safety test relies on, and the cap on hash
 /// work per disclosed key.
 #[derive(Debug, Clone, Copy)]
-pub struct TeslaParams {
+pub struct TeslaSchedule {
     /// Start of media interval 1 on the shared timebase.
     pub t0_ns: u64,
     /// Interval duration T_int in ns.
@@ -60,14 +60,14 @@ pub struct TeslaParams {
     pub g_max: u32,
 }
 
-impl TeslaParams {
-    /// Creates the parameter set.
+impl TeslaSchedule {
+    /// Creates the schedule.
     pub fn new(t0_ns: u64, t_int_ns: u64, d: u32, n_chain: u32, d_t_ns: u64, g_max: u32) -> Self {
         assert!(t_int_ns > 0, "interval duration must be positive");
         assert!(d >= 2, "d = 1 gives zero travel budget");
         assert!(n_chain >= 1, "the chain must contain at least one media interval");
         assert!(g_max >= 1, "a zero misordering cap rejects every disclosure");
-        TeslaParams {
+        TeslaSchedule {
             t0_ns,
             t_int_ns,
             d,
@@ -129,8 +129,8 @@ mod tests {
     /// Our example: T_int = 1 s, d = 2,
     /// D_t = 0.1 s, packet of media interval 6 (spanning 5 s..6 s of
     /// stream time).
-    fn params() -> TeslaParams {
-        TeslaParams::new(0, 1_000_000_000, 2, 100, 100_000_000, 16)
+    fn params() -> TeslaSchedule {
+        TeslaSchedule::new(0, 1_000_000_000, 2, 100, 100_000_000, 16)
     }
 
     /// A packet of interval 6 is safe only while the sender cannot yet be
