@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# run_end_to_end.sh
+# REPRODUCE.sh
 #
 # Runs all MLS-SRTP benchmarks, copies Criterion results into the
 # locations the Jupyter notebook expects, and executes the notebook to
 # generate all figures.
 #
 # Benchmarks -> figures/tables (in notebook presentation order; see
-# figures_from_benches.ipynb):
+# GENERATE_FIGURES.ipynb):
 #   1.  srtp_throughput              -> Figures 1-2, Tables 1-2
 #   2.  replay_protection            -> Table 1
 #   3.  pep_throughput               -> Figures 3-4
@@ -20,8 +20,8 @@
 #  11.  tesla_throughput             -> Figures 18-19
 #
 # Usage:
-#   ./run_end_to_end.sh              # run everything
-#   ./run_end_to_end.sh --skip-bench # skip benchmarks, just re-run notebook
+#   ./REPRODUCE.sh              # run everything
+#   ./REPRODUCE.sh --skip-bench # skip benchmarks, just re-run notebook
 
 set -euo pipefail
 
@@ -31,7 +31,7 @@ REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$REPO_ROOT"
 CRITERION_SRC="$REPO_ROOT/target/criterion"
 CRITERION_DST="$REPO_ROOT/benches/results/criterion"
-NOTEBOOK="$REPO_ROOT/figures_from_benches.ipynb"
+NOTEBOOK="$REPO_ROOT/GENERATE_FIGURES.ipynb"
 
 SKIP_BENCH=false
 for arg in "$@"; do

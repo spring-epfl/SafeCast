@@ -1,4 +1,4 @@
-# Python dependencies for regenerating the figures (figures_from_benches.ipynb)
+# Python dependencies for regenerating the figures (GENERATE_FIGURES.ipynb)
 jupyter
 nbconvert
 matplotlib

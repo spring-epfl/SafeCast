@@ -29,7 +29,7 @@ else could have known the key it was tagged with.
 
 This trade-off, along with the cost of MLS rekeying and SRTP encryption/decryption, 
 is benchmarked in this repository (see [Benchmarks](#benchmarks)). 
-A Jupyter notebook (`figures_from_benches.ipynb`) then turns the raw results into figures.
+A Jupyter notebook (`GENERATE_FIGURES.ipynb`) then turns the raw results into figures.
 
 ![MLS-SRTP overview](figures/mls_srtp_overview.png)
 
@@ -88,8 +88,8 @@ MLS-SRTP/
 │   ├── srtp/                     - safe Rust API wrapping srtp2-sys
 │   └── srtp2-sys/                - the libsrtp C library
 ├── figures/                      Generated figures + overview diagrams
-├── figures_from_benches.ipynb    Jupyter notebook: benchmark results -> all figures
-└── run_end_to_end.sh             Runs all benchmarks + executes notebook to regenerate figures
+├── GENERATE_FIGURES.ipynb    Jupyter notebook: benchmark results -> all figures
+└── REPRODUCE.sh             Runs all benchmarks + executes notebook to regenerate figures
 ```
 
 ## Setup
@@ -120,7 +120,7 @@ Once Rust and OpenSSL are in place, `cargo build` compiles everything.
 
 Run all benchmarks and regenerate every figure in one go:
 ```bash
-./run_end_to_end.sh
+./REPRODUCE.sh
 ```
 The full run takes about 2.5 hours.
 
@@ -139,14 +139,14 @@ cargo bench --package mls-srtp-core --bench <name>
 | `srtp_rtcp_interleaving` | RTP throughput with periodic SRTCP interleaved | Figure 8 |
 | `granularity_throughput_ideal` | Epoch/frame/packet keying under ideal in-order delivery | Figures 9, 10 |
 | `realistic_receiver` | The three granularities on the reorder-capable receiver under a disturbed network | Figures 11-17 |
-| `tesla_throughput` | TESLA per-sender authentication cost on top of SRTP, both directions | Figures 18, 19; `writeups/tesla_throughput.md` |
 | `key_derivation` | MLS key export + SRTP KDF latency | Table 3 |
 | `replay_protection` | Cost of rejecting a replayed packet | Table 1 (replay row) |
 | `ratchet_step` | The cost paid per ratchet step: deriving and installing new keys | `writeups/ratchet_step.md` |
 | `srtp_scaling` + `aes_gcm_baseline` | SRTP time vs raw AES-GCM | `writeups/fixed_cost_breakdown.md` |
+| `tesla_throughput` | TESLA per-sender authentication cost on top of SRTP, both directions | Figures 18, 19 |
 
 "Figure N" is the file `figures/figN_*.png`/`.pdf`; "Table N" is printed inside the
-notebook (`figures_from_benches.ipynb`). The write-ups live in
+notebook (`GENERATE_FIGURES.ipynb`). The write-ups live in
 `benches/results/writeups/`.
 
 The `realistic_receiver` benchmark evaluates the receiver under simulated network conditions:

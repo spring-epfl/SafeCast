@@ -1,3 +1,2 @@
 /target/
 .DS_Store
-crates/mls-srtp-core/benches/results/criterion/
