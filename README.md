@@ -44,6 +44,19 @@ has already moved on, the receiver caches the last few generation keys in a slid
 so those late packets still decrypt. Once a generation falls behind the window its key is deleted, 
 and it is that deletion that provides forward secrecy.
 
+The bottom row of the figure is the source-authentication layer. Time is sliced into short
+intervals, and the sender holds a secret hash chain `K_0 <- K_1 <- ... <- K_N` with one
+key per interval. Each encrypted packet gets a tag under the current interval's key `K_i`
+and carries, in the clear, the interval number `i` and the key `K_{i-d}` whose secrecy 
+has just expired. That disclosure is how receivers learn the keys, `d` intervals later. 
+The receiver accepts a packet only if its clock says `K_i` cannot have been
+disclosed yet, and holds it. Once `K_i` arrives, one hash proves the key genuine
+(`hash(K_i) = K_{i-1}`, rooted in the signed starting point `K_0`), and the
+held packets' tags are checked with it. Before the stream starts, the sender
+publishes `K_0` and the interval timetable in a single message, signed with its
+MLS signing key. Verifying that signature is how a receiver knows whose
+chain it is checking.
+
 ## Repository structure
 
 ```
