@@ -10,9 +10,9 @@
 //! reordering, no jitter. The sender's protected bytes are
 //! handed directly to the receiver's `unprotect` (an in-memory buffer).
 
-use mls_srtp_core::keying::granularity::{Granularity, RekeyingStream};
-use mls_srtp_core::keying::ratchet::StreamRatchet;
-use mls_srtp_core::transport::rtp::RtpPacket;
+use safecast_core::keying::granularity::{Granularity, RekeyingStream};
+use safecast_core::keying::ratchet::StreamRatchet;
+use safecast_core::transport::rtp::RtpPacket;
 
 const SSRC: u32 = 0x1234_5678;
 /// Frames in the test stream.

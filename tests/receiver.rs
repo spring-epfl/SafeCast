@@ -6,11 +6,11 @@
 //!   - with gaps: some packets never arrive (loss), leaving holes in the seq
 //!   - duplicated: the same packet arrives more than once (a replay)
 
-use mls_srtp_core::receiver::generation::GenerationScheme;
-use mls_srtp_core::keying::granularity::{Granularity, RekeyingStream};
-use mls_srtp_core::keying::ratchet::StreamRatchet;
-use mls_srtp_core::receiver::{RecvDrop, ReceiverKeyManager};
-use mls_srtp_core::transport::rtp::RtpPacket;
+use safecast_core::receiver::generation::GenerationScheme;
+use safecast_core::keying::granularity::{Granularity, RekeyingStream};
+use safecast_core::keying::ratchet::StreamRatchet;
+use safecast_core::receiver::{RecvDrop, ReceiverKeyManager};
+use safecast_core::transport::rtp::RtpPacket;
 
 // Unique identifier for the test stream.
 const SSRC: u32 = 0x5EED_CAFE;

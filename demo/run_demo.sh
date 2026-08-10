@@ -53,7 +53,7 @@ echo ""
 
 # -- Building everything first ------------------------------------------------
 echo "=== Building all binaries ==="
-cargo build -p auth-service -p mls-srtp-client 2>&1
+cargo build -p auth-service -p safecast-client 2>&1
 (cd "$ROOT/third_party/openmls" && cargo build -p mls-ds 2>&1)
 echo ""
 
@@ -68,14 +68,14 @@ PIDS+=($!)
 wait_for_port 8080 "Delivery Service"
 
 # -- Starting creator (sets up the MLS group, delivers Welcome) ----------------
-cargo run -p mls-srtp-client -- --mode creator --senders 1 --receivers "$NUM_RECEIVERS" &
+cargo run -p safecast-client -- --mode creator --senders 1 --receivers "$NUM_RECEIVERS" &
 PIDS+=($!)
 sleep 1
 
 # -- Starting receivers (joiners) in background -------------------------------
 RECEIVER_PIDS=()
 for i in $(seq 1 "$NUM_RECEIVERS"); do
-    cargo run -p mls-srtp-client -- --mode receiver &
+    cargo run -p safecast-client -- --mode receiver &
     pid=$!
     PIDS+=($pid)
     RECEIVER_PIDS+=($pid)
@@ -84,7 +84,7 @@ sleep 2
 
 # -- Starting sender (joiner) -------------------------------------------------
 SENDER_EXIT=0
-cargo run -p mls-srtp-client -- --mode sender || SENDER_EXIT=$?
+cargo run -p safecast-client -- --mode sender || SENDER_EXIT=$?
 
 # -- Waiting for receivers to finish ------------------------------------------
 RECEIVER_EXIT=0

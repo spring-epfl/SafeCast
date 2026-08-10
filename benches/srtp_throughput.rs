@@ -8,7 +8,7 @@
 //! can keep up with this bitrate.
 //!
 //! Run:
-//!   cargo bench --package mls-srtp-core --bench srtp_throughput
+//!   cargo bench --package safecast-core --bench srtp_throughput
 //!
 //! Design notes:
 //!
@@ -50,9 +50,9 @@ use std::time::{Duration, Instant};
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use mls_srtp_core::keying::mls::{export_srtp_keys, ssrc_from_identity, MlsMember, CIPHERSUITE};
-use mls_srtp_core::transport::rtp::RTP_HEADER_LEN;
-use mls_srtp_core::transport::srtp_session::{create_sender_session, create_receiver_session};
+use safecast_core::keying::mls::{export_srtp_keys, ssrc_from_identity, MlsMember, CIPHERSUITE};
+use safecast_core::transport::rtp::RTP_HEADER_LEN;
+use safecast_core::transport::srtp_session::{create_sender_session, create_receiver_session};
 
 use openmls::prelude::*;
 

@@ -26,13 +26,13 @@
 //!   5. receiver_rekey_pipeline: process_rekey_commit + export_srtp_keys
 //!      (total receiver-side cost per epoch change).
 //! 
-//! Run: cargo bench --package mls-srtp-core --bench rekey
+//! Run: cargo bench --package safecast-core --bench rekey
 
 use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 
-use mls_srtp_core::keying::mls::{
+use safecast_core::keying::mls::{
     create_rekey_commit, export_srtp_keys, process_commit, ssrc_from_identity, MlsMember,
     CIPHERSUITE,
 };

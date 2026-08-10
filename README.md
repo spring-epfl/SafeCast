@@ -1,6 +1,6 @@
-# MLS-SRTP: End-to-End Encrypted Real-Time Media over IP Multicast
+# SafeCast: End-to-End Encrypted Real-Time Media over IP Multicast
 
-This repository is a research prototype and evaluation of a system for
+SafeCast is a research prototype and evaluation of a system for
 end-to-end encrypted real-time media transported over IP multicast. The design combines two
 building blocks:
 
@@ -31,7 +31,7 @@ This trade-off, along with the cost of MLS rekeying and SRTP encryption/decrypti
 is benchmarked in this repository (see [Benchmarks](#benchmarks)). 
 A Jupyter notebook (`GENERATE_FIGURES.ipynb`) then turns the raw results into figures.
 
-![MLS-SRTP overview](figures/mls_srtp_overview.png)
+![SafeCast overview](figures/safecast_overview.png)
 
 Each MLS epoch exports one seed per sender (`MLS-Exporter(SSRC)`), which an SRTP
 key ratchet expands via HKDF into a chain of generation keys `key_0, key_1, ...`.
@@ -60,7 +60,7 @@ chain it is checking.
 ## Repository structure
 
 ```
-MLS-SRTP/
+SafeCast/
 ├── src/                          The core library
 │   ├── keying/                   MLS group management and key export, the
 │   │                             per-stream key ratchet, and the keying
@@ -81,7 +81,7 @@ MLS-SRTP/
 ├── tests/                        Integration tests of the core library
 ├── demo/                         Live multicast demo
 │   ├── auth-service/             - minimal Authentication Service
-│   ├── mls-srtp-client/          - creator/sender/receiver client
+│   ├── safecast-client/          - creator/sender/receiver client
 │   └── run_demo.sh               - launches the whole pipeline
 ├── third_party/                  Patched copies of dependencies (see below):
 │   ├── openmls/                  - OpenMLS (incl. the Delivery Service)
@@ -126,7 +126,7 @@ The full run takes about 2.5 hours.
 
 Or run a single benchmark:
 ```bash
-cargo bench --package mls-srtp-core --bench <name>
+cargo bench --package safecast-core --bench <name>
 ```
 
 | Benchmark | What it measures | Output |
@@ -185,7 +185,7 @@ SRTP-protected RTP packets over IP multicast.
 ## Tests
 
 ```bash
-cargo test --package mls-srtp-core
+cargo test --package safecast-core
 ```
 
 ## Modifications to dependencies

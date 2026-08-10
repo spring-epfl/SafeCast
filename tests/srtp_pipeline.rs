@@ -1,12 +1,12 @@
 //! Integration tests for the full SRTP encrypt/decrypt pipeline.
 //!
-//! Run: cargo test --package mls-srtp-core --test srtp_pipeline -- --nocapture
+//! Run: cargo test --package safecast-core --test srtp_pipeline -- --nocapture
 
-use mls_srtp_core::keying::mls::{
+use safecast_core::keying::mls::{
     export_srtp_keys, ssrc_from_identity, MlsMember, CIPHERSUITE,
 };
-use mls_srtp_core::transport::rtp::{RtpPacket, RTP_HEADER_LEN};
-use mls_srtp_core::transport::srtp_session::{create_receiver_session, create_sender_session};
+use safecast_core::transport::rtp::{RtpPacket, RTP_HEADER_LEN};
+use safecast_core::transport::srtp_session::{create_receiver_session, create_sender_session};
 
 use openmls::prelude::*;
 use openmls_traits::OpenMlsProvider;

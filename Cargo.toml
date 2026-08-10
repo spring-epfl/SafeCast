@@ -1,13 +1,13 @@
 [package]
-name = "mls-srtp-core"
+name = "safecast-core"
 version = "0.1.0"
 edition = "2024"
-description = "Core library for MLS-SRTP: MLS group helpers, key ratchet, keying granularities, RTP packets, SRTP sessions, reorder-capable receiver, and network simulation"
+description = "Core library for SafeCast: MLS group helpers, key ratchet, keying granularities, RTP packets, SRTP sessions, reorder-capable receiver, network simulation, and per-sender authentication"
 
 [workspace]
 members = [
     "demo/auth-service",
-    "demo/mls-srtp-client",
+    "demo/safecast-client",
 ]
 exclude = ["third_party/openmls"]
 resolver = "2"

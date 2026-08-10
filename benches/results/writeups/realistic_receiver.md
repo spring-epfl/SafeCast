@@ -305,14 +305,14 @@ in `../realistic_receiver/`:
 
 ```
 # the disturbed packet-level run:
-cargo bench -p mls-srtp-core --bench realistic_receiver -- --granularity packet --packets 1000000
+cargo bench -p safecast-core --bench realistic_receiver -- --granularity packet --packets 1000000
 
 # the clean packet-level run (used in the validation of section 6)
-cargo bench -p mls-srtp-core --bench realistic_receiver -- --granularity packet --packets 1000000 \
+cargo bench -p safecast-core --bench realistic_receiver -- --granularity packet --packets 1000000 \
     --jitter-ns 0 --loss 0 --single-path
 
 # one K of section 4:
-cargo bench -p mls-srtp-core --bench realistic_receiver -- --granularity packet --packets 1000000 \
+cargo bench -p safecast-core --bench realistic_receiver -- --granularity packet --packets 1000000 \
     --key-window 24
 ```
 

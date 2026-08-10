@@ -41,5 +41,5 @@ throughput for all three granularities is measured separately.
 ## Reproduction
 
 ```
-cargo bench --package mls-srtp-core --bench ratchet_step
+cargo bench --package safecast-core --bench ratchet_step
 ```

@@ -3,9 +3,9 @@
 //! index stamp, the evenly paced send times, and a frame-level
 //! encrypt/decrypt round trip.
 
-use mls_srtp_core::keying::granularity::{Granularity, RekeyingStream};
-use mls_srtp_core::keying::ratchet::StreamRatchet;
-use mls_srtp_core::simulation::sender::{SimulatedSender, StreamModel, FPS, FRAME_PERIOD, START_TS};
+use safecast_core::keying::granularity::{Granularity, RekeyingStream};
+use safecast_core::keying::ratchet::StreamRatchet;
+use safecast_core::simulation::sender::{SimulatedSender, StreamModel, FPS, FRAME_PERIOD, START_TS};
 
 /// Unique identifier for the test stream.
 const SSRC: u32 = 0x5EED_CAFE;

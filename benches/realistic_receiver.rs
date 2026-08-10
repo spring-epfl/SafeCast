@@ -47,12 +47,12 @@
 //!     as one CSV row.
 //!
 //! Run (defaults = dual path, 100 us jitter per path, 1e-4 loss per copy, 2 ms path skew):
-//!   cargo bench --package mls-srtp-core --bench realistic_receiver
+//!   cargo bench --package safecast-core --bench realistic_receiver
 //! Zero-disturbance run for the ideal-benchmark comparison:
-//!   cargo bench --package mls-srtp-core --bench realistic_receiver -- \
+//!   cargo bench --package safecast-core --bench realistic_receiver -- \
 //!       --jitter-ns 0 --loss 0 --single-path
 //! All configurations in one go (see --sweep above):
-//!   cargo bench --package mls-srtp-core --bench realistic_receiver -- --sweep
+//!   cargo bench --package safecast-core --bench realistic_receiver -- --sweep
 
 use std::collections::{BTreeMap, HashMap};
 use std::fs::OpenOptions;
@@ -62,13 +62,13 @@ use std::time::Instant;
 
 use clap::Parser;
 
-use mls_srtp_core::keying::granularity::Granularity;
-use mls_srtp_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
-use mls_srtp_core::receiver::generation::GenerationScheme;
-use mls_srtp_core::receiver::{ReceiverKeyManager, RecvDrop, RecvStats};
-use mls_srtp_core::transport::rtp::RTP_HEADER_LEN;
-use mls_srtp_core::simulation::network::{disturb, LossModel, NetworkConfig, NetworkStats, PathConfig};
-use mls_srtp_core::simulation::sender::{
+use safecast_core::keying::granularity::Granularity;
+use safecast_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
+use safecast_core::receiver::generation::GenerationScheme;
+use safecast_core::receiver::{ReceiverKeyManager, RecvDrop, RecvStats};
+use safecast_core::transport::rtp::RTP_HEADER_LEN;
+use safecast_core::simulation::network::{disturb, LossModel, NetworkConfig, NetworkStats, PathConfig};
+use safecast_core::simulation::sender::{
     SimulatedSender, StreamModel, FPS, FRAME_BYTES, FRAME_PERIOD, GCM_TAG_LEN, START_TS,
 };
 

@@ -61,5 +61,5 @@ rekeys (during for example ad breaks).
 ## Reproduction
 
 ```
-cargo bench --package mls-srtp-core --bench rekey
+cargo bench --package safecast-core --bench rekey
 ```

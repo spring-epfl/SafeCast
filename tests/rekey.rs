@@ -11,14 +11,14 @@
 //! perform a rekey commit, and confirm that (1) all members derive the
 //! same fresh keys and (2) the new keys work for SRTP encryption.
 //!
-//! Run: cargo test --package mls-srtp-core --test rekey -- --nocapture
+//! Run: cargo test --package safecast-core --test rekey -- --nocapture
 
-use mls_srtp_core::keying::mls::{
+use safecast_core::keying::mls::{
     create_rekey_commit, export_srtp_keys, process_commit, ssrc_from_identity, MlsMember,
     CIPHERSUITE,
 };
-use mls_srtp_core::transport::rtp::RtpPacket;
-use mls_srtp_core::transport::srtp_session::{create_receiver_session, create_sender_session};
+use safecast_core::transport::rtp::RtpPacket;
+use safecast_core::transport::srtp_session::{create_receiver_session, create_sender_session};
 
 use openmls::prelude::*;
 use openmls_traits::OpenMlsProvider;

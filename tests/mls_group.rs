@@ -5,9 +5,9 @@
 //! in the real client, but pass Welcome messages and group state directly
 //! as Rust objects (no Delivery Service or multicast sockets).
 //!
-//! Run: cargo test --package mls-srtp-core --test mls_group -- --nocapture
+//! Run: cargo test --package safecast-core --test mls_group -- --nocapture
 
-use mls_srtp_core::keying::mls::{
+use safecast_core::keying::mls::{
     export_srtp_keys, parse_credential_identity, ssrc_from_identity, MlsMember, CIPHERSUITE,
     SRTP_KEY_MATERIAL_LEN,
 };

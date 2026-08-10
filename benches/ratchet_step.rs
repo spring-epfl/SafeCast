@@ -12,13 +12,13 @@
 //! is a key-derived value that GCM's authentication step multiplies by. 
 //! Both are derived from the key, so a new key forces recomputing both.
 //!
-//! Run: cargo bench --package mls-srtp-core --bench ratchet_step
+//! Run: cargo bench --package safecast-core --bench ratchet_step
 
 use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use mls_srtp_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
+use safecast_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
 
 use openmls_rust_crypto::OpenMlsRustCrypto;
 use openmls_traits::OpenMlsProvider;

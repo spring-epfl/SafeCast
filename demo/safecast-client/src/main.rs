@@ -8,23 +8,23 @@
 //!
 //! Usage examples:
 //!   # Creator (sets up the group, waits for 1 sender and 3 receivers):
-//!   mls-srtp-client --mode creator --senders 1 --receivers 3
+//!   safecast-client --mode creator --senders 1 --receivers 3
 //!
 //!   # Sender (registers, joins via Welcome, sends SRTP):
-//!   mls-srtp-client --mode sender --packets 3
+//!   safecast-client --mode sender --packets 3
 //!
 //!   # Receiver (registers, joins via Welcome, receives SRTP):
-//!   mls-srtp-client --mode receiver --packets 3
+//!   safecast-client --mode receiver --packets 3
 
 use std::collections::HashMap;
 
 use clap::{Parser, ValueEnum};
 
-use mls_srtp_core::keying::mls::{
+use safecast_core::keying::mls::{
     export_srtp_keys, parse_credential_identity, ssrc_from_identity, MlsMember, CIPHERSUITE,
 };
-use mls_srtp_core::transport::rtp::RtpPacket;
-use mls_srtp_core::transport::srtp_session::{create_receiver_session, create_sender_session};
+use safecast_core::transport::rtp::RtpPacket;
+use safecast_core::transport::srtp_session::{create_receiver_session, create_sender_session};
 
 // demo-only
 mod ds_client;

@@ -1,11 +1,11 @@
 [package]
-name = "mls-srtp-client"
+name = "safecast-client"
 version = "0.1.0"
 edition = "2024"
 description = "MLS-SRTP demo client: creator, sender, or receiver"
 
 [dependencies]
-mls-srtp-core = { path = "../.." }
+safecast-core = { path = "../.." }
 openmls = { workspace = true }
 openmls_traits = { workspace = true }
 srtp = { workspace = true }

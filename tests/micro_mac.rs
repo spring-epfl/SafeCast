@@ -8,8 +8,8 @@
 use std::hint::black_box;
 use std::time::Instant;
 
-use mls_srtp_core::tesla::chain::TESLA_KEY_LEN;
-use mls_srtp_core::tesla::mac::TeslaMacAlg;
+use safecast_core::tesla::chain::TESLA_KEY_LEN;
+use safecast_core::tesla::mac::TeslaMacAlg;
 
 #[test]
 #[ignore]

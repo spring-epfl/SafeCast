@@ -38,5 +38,5 @@ processing that triggers it (271 µs for a 2-member group).
 ## Reproduction
 
 ```
-cargo bench --package mls-srtp-core --bench key_derivation
+cargo bench --package safecast-core --bench key_derivation
 ```

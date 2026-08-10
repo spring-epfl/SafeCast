@@ -58,47 +58,47 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 if [ "$SKIP_BENCH" = false ]; then
 
     info "Running SRTP throughput benchmark (protect + unprotect)..."
-    cargo bench --package mls-srtp-core --bench srtp_throughput
+    cargo bench --package safecast-core --bench srtp_throughput
     ok "SRTP throughput benchmark complete."
 
     info "Running replay protection benchmark..."
-    cargo bench --package mls-srtp-core --bench replay_protection
+    cargo bench --package safecast-core --bench replay_protection
     ok "Replay protection benchmark complete."
 
     info "Running PEP throughput benchmark (CTR + CTR_CMAC-64)..."
-    cargo bench --package mls-srtp-core --bench pep_throughput
+    cargo bench --package safecast-core --bench pep_throughput
     ok "PEP throughput benchmark complete."
 
     info "Running MLS rekey benchmark..."
-    cargo bench --package mls-srtp-core --bench rekey
+    cargo bench --package safecast-core --bench rekey
     ok "MLS rekey benchmark complete."
 
     info "Running MLS rekey breakdown benchmark..."
-    cargo bench --package mls-srtp-core --bench rekey_breakdown
+    cargo bench --package safecast-core --bench rekey_breakdown
     ok "MLS rekey breakdown benchmark complete."
 
     info "Running key derivation benchmark..."
-    cargo bench --package mls-srtp-core --bench key_derivation
+    cargo bench --package safecast-core --bench key_derivation
     ok "Key derivation benchmark complete."
 
     info "Running memory usage measurement..."
-    cargo bench --package mls-srtp-core --bench memory_usage
+    cargo bench --package safecast-core --bench memory_usage
     ok "Memory usage measurement complete."
 
     info "Running SRTP/RTCP interleaving benchmark..."
-    cargo bench --package mls-srtp-core --bench srtp_rtcp_interleaving
+    cargo bench --package safecast-core --bench srtp_rtcp_interleaving
     ok "SRTP/RTCP interleaving benchmark complete."
 
     info "Running granularity throughput benchmark (ideal in-order delivery)..."
-    cargo bench --package mls-srtp-core --bench granularity_throughput_ideal
+    cargo bench --package safecast-core --bench granularity_throughput_ideal
     ok "Granularity throughput benchmark complete."
 
     info "Running realistic receiver sweep..."
-    cargo bench --package mls-srtp-core --bench realistic_receiver -- --sweep
+    cargo bench --package safecast-core --bench realistic_receiver -- --sweep
     ok "Realistic receiver sweep complete."
 
     info "Running TESLA throughput benchmark..."
-    cargo bench --package mls-srtp-core --bench tesla_throughput
+    cargo bench --package safecast-core --bench tesla_throughput
     ok "TESLA throughput benchmark complete."
 
 fi

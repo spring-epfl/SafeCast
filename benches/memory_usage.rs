@@ -21,7 +21,7 @@
 //!
 //! Results are written to benches/results/memory_usage/memory_usage.json.
 //! 
-//! Run: cargo bench --package mls-srtp-core --bench memory_usage
+//! Run: cargo bench --package safecast-core --bench memory_usage
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -86,7 +86,7 @@ fn current_allocated() -> usize {
 // Each new member self-updates after joining to populate its leaf with
 // fresh HPKE key pairs (no blank nodes in the tree).
 
-use mls_srtp_core::keying::mls::{
+use safecast_core::keying::mls::{
     create_rekey_commit, export_srtp_keys, process_commit, MlsMember, CIPHERSUITE,
 };
 use openmls::prelude::*;

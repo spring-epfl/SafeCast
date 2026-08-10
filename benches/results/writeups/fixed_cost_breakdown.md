@@ -146,8 +146,8 @@ approaches the asymptotic AES-GCM ceiling of ~77 Gbps.
 ## Reproduction
 
 ```
-cargo bench --package mls-srtp-core --bench srtp_scaling
-cargo bench --package mls-srtp-core --bench aes_gcm_baseline
+cargo bench --package safecast-core --bench srtp_scaling
+cargo bench --package safecast-core --bench aes_gcm_baseline
 
 # copy the Criterion estimates this analysis reads:
 for sz in 16 32 64 128 256 512 1024 1424 2048 4096 8192 8924 16384; do

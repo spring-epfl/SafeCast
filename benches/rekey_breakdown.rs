@@ -22,13 +22,13 @@
 //! We changed it to `pub` in our local fork to allow benchmarking the
 //! receiver-side path decryption separately from the framing decryption.
 //! 
-//! Run: cargo bench --package mls-srtp-core --bench rekey_breakdown
+//! Run: cargo bench --package safecast-core --bench rekey_breakdown
 
 use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 
-use mls_srtp_core::keying::mls::{
+use safecast_core::keying::mls::{
     create_rekey_commit, process_commit, MlsMember,
     CIPHERSUITE,
 };

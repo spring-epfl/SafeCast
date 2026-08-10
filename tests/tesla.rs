@@ -4,17 +4,17 @@
 //! a tampered packet, a too-late packet) and checks that every delivered
 //! packet ends up with the right verdict, such as "verified" or "forged".
 
-use mls_srtp_core::keying::granularity::Granularity;
-use mls_srtp_core::keying::mls::{ssrc_from_identity, MlsMember, CIPHERSUITE};
-use mls_srtp_core::keying::ratchet::StreamRatchet;
-use mls_srtp_core::receiver::generation::GenerationScheme;
-use mls_srtp_core::receiver::ReceiverKeyManager;
-use mls_srtp_core::simulation::sender::{SimulatedSender, StreamModel};
-use mls_srtp_core::tesla::commitment::TeslaCommitment;
-use mls_srtp_core::tesla::mac::TeslaMacAlg;
-use mls_srtp_core::tesla::schedule::TeslaSchedule;
-use mls_srtp_core::tesla::receiver::{TeslaDrop, TeslaReceiver};
-use mls_srtp_core::tesla::sender::TeslaSender;
+use safecast_core::keying::granularity::Granularity;
+use safecast_core::keying::mls::{ssrc_from_identity, MlsMember, CIPHERSUITE};
+use safecast_core::keying::ratchet::StreamRatchet;
+use safecast_core::receiver::generation::GenerationScheme;
+use safecast_core::receiver::ReceiverKeyManager;
+use safecast_core::simulation::sender::{SimulatedSender, StreamModel};
+use safecast_core::tesla::commitment::TeslaCommitment;
+use safecast_core::tesla::mac::TeslaMacAlg;
+use safecast_core::tesla::schedule::TeslaSchedule;
+use safecast_core::tesla::receiver::{TeslaDrop, TeslaReceiver};
+use safecast_core::tesla::sender::TeslaSender;
 use openmls::prelude::*;
 use openmls_traits::OpenMlsProvider;
 

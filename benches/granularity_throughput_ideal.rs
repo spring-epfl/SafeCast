@@ -20,7 +20,7 @@
 //! is unaffected.
 //!
 //! Run:
-//!   cargo bench --package mls-srtp-core --bench granularity_throughput_ideal
+//!   cargo bench --package safecast-core --bench granularity_throughput_ideal
 //!
 //! The granularities differ only in how often the key is rotated:
 //!   - epoch-only: never within the epoch
@@ -55,9 +55,9 @@ use std::time::{Duration, Instant};
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
-use mls_srtp_core::keying::granularity::{Granularity, RekeyingStream};
-use mls_srtp_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
-use mls_srtp_core::transport::rtp::RTP_HEADER_LEN;
+use safecast_core::keying::granularity::{Granularity, RekeyingStream};
+use safecast_core::keying::ratchet::{StreamRatchet, CHAIN_SECRET_LEN};
+use safecast_core::transport::rtp::RTP_HEADER_LEN;
 
 /// AES-128-GCM authentication tag length in bytes (RFC 7714).
 const GCM_TAG_LEN: usize = 16;

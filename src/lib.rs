@@ -1,4 +1,4 @@
-//! MLS-SRTP shared library: building blocks for the MLS -> SRTP pipeline.
+//! SafeCast shared library: building blocks for the MLS -> SRTP pipeline.
 //!
 //! Group keying:
 //!   - [`keying::mls`]: MLS group member management and key export (RFC 9420)

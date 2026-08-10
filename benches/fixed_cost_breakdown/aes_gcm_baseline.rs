@@ -8,7 +8,7 @@
 //! `protect()` call), the difference isolates the SRTP overhead.
 //!
 //! Run:
-//!   cargo bench --package mls-srtp-core --bench aes_gcm_baseline
+//!   cargo bench --package safecast-core --bench aes_gcm_baseline
 
 use std::hint::black_box;
 use std::time::{Duration, Instant};
