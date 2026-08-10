@@ -101,26 +101,26 @@
   <!-- TESLA extension -->
 
   <line x1="485" y1="512" x2="485" y2="578" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="497" y="550" font-size="13.5" xml:space="preserve">hdr &#8214; <tspan font-style="italic">c</tspan></text>
+  <text x="497" y="550" font-size="13.5" xml:space="preserve">hdr || <tspan font-style="italic">c</tspan></text>
 
   <rect x="310" y="580" width="350" height="116" fill="none" stroke="#000" stroke-width="1.5"/>
   <text x="485" y="606" text-anchor="middle" font-size="17" font-weight="bold">TESLA authenticate</text>
   <g font-size="15.5">
     <text x="485" y="640" text-anchor="middle" xml:space="preserve">hash chain: <tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">0</tspan><tspan dy="-3.5"> &#8592; </tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">1</tspan><tspan dy="-3.5"> &#8592; &#8943; &#8592; </tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">N</tspan></text>
-    <text x="485" y="672" text-anchor="middle" xml:space="preserve">tag = MAC(<tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5">, hdr &#8214; </tspan><tspan font-style="italic">c</tspan><tspan>),  </tspan><tspan font-style="italic">i</tspan><tspan> = current interval</tspan></text>
+    <text x="485" y="672" text-anchor="middle" xml:space="preserve">tag = MAC(<tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5">, hdr || </tspan><tspan font-style="italic">c</tspan><tspan>),  </tspan><tspan font-style="italic">i</tspan><tspan> = current interval</tspan></text>
   </g>
 
   <line x1="660" y1="638" x2="819" y2="638" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="738" y="620" text-anchor="middle" font-size="13.5" xml:space="preserve">hdr &#8214; <tspan font-style="italic">c</tspan> &#8214; <tspan font-style="italic">i</tspan> &#8214; <tspan font-style="italic">K</tspan><tspan dy="3" font-size="10.5" font-style="italic">i&#8722;d</tspan><tspan dy="-3"> &#8214; tag</tspan></text>
+  <text x="738" y="620" text-anchor="middle" font-size="13.5" xml:space="preserve">hdr || <tspan font-style="italic">c</tspan> || <tspan font-style="italic">i</tspan> || <tspan font-style="italic">K</tspan><tspan dy="3" font-size="10.5" font-style="italic">i&#8722;d</tspan><tspan dy="-3"> || tag</tspan></text>
 
   <rect x="820" y="580" width="350" height="116" fill="none" stroke="#000" stroke-width="1.5"/>
   <text x="995" y="606" text-anchor="middle" font-size="17" font-weight="bold">TESLA verify</text>
   <g font-size="15">
     <text x="995" y="634" text-anchor="middle" xml:space="preserve">accept iff <tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5"> still secret</tspan></text>
-    <text x="995" y="664" text-anchor="middle" xml:space="preserve">when <tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5"> is disclosed:</tspan></text>
-    <text x="995" y="686" text-anchor="middle" xml:space="preserve"><tspan>hash(</tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5">) &#8799; </tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i&#8722;1</tspan><tspan dy="-3.5">,  tag &#8799; MAC(</tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5">, hdr &#8214; </tspan><tspan font-style="italic">c</tspan><tspan>)</tspan></text>
+    <text x="995" y="664" text-anchor="middle" xml:space="preserve">when <tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5"> is disclosed, </tspan><tspan font-style="italic">d</tspan><tspan> intervals later:</tspan></text>
+    <text x="995" y="686" text-anchor="middle" xml:space="preserve"><tspan>hash(</tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5">) &#8799; </tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i&#8722;1</tspan><tspan dy="-3.5">,  tag &#8799; MAC(</tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5">, hdr || </tspan><tspan font-style="italic">c</tspan><tspan>)</tspan></text>
   </g>
 
-  <line x1="900" y1="578" x2="900" y2="548" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="912" y="570" font-size="13.5" xml:space="preserve">hdr &#8214; <tspan font-style="italic">c</tspan></text>
+  <line x1="995" y1="578" x2="995" y2="548" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="1007" y="570" font-size="13.5" xml:space="preserve">hdr || <tspan font-style="italic">c</tspan></text>
 </svg>
