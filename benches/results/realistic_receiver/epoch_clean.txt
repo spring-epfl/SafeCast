@@ -7,9 +7,9 @@ limits    key_window K=512 seek_cap=4096 replay_window=512
 outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
           cache_hits=999999 installs=1 catchup_steps=1 max_catchup=1
 paths     advance   (g above max, derives keys): n=0
-          current   (g equals max, key reused):  n=950000 mean=325.2 ns p99=458 ns max=53708 ns
+          current   (g equals max, key reused):  n=950000 mean=314.3 ns p99=416 ns max=45458 ns
           straggler (g below max, old key):      n=0
 keying    loss rate = 0/1000000 = 0.000e0
 timing    950000 measured calls (first 50000 of 1000000 arrivals skipped as warmup)
-          mean=325.2 ns p50=333 p99=458 p99.9=500 max=53708 ns -> 35.72 Gbps at 1452 B wire
-warmup    warmup-region mean=330.0 ns vs measured mean=325.2 ns
+          mean=314.3 ns p50=292 p99=416 p99.9=459 max=45458 ns -> 36.96 Gbps at 1452 B wire
+warmup    warmup-region mean=322.3 ns vs measured mean=314.3 ns

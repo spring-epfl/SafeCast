@@ -1,16 +1,16 @@
 == Realistic Receiver Report ==
 config    granularity=frame payload=1424 B packets=1000000 seed=1
-network   dual-path (ST 2022-7): jitter=100000 ns/path loss=0.0001 /copy skew=2000000 ns
-delivery  delivered=1000000 lost_packets=0 (copies lost: a=100 b=104) wins a/b=999900/100 duplicates_dropped=999796
-disorder  reordered=724046 lateness p50/p99/p99.9/max=5/19/20/455 gaps=217572 max_gap=17
+network   dual-path (ST 2022-7): jitter=50000 ns/path loss=0.00001 /copy skew=150000 ns
+delivery  delivered=1000000 lost_packets=0 (copies lost: a=11 b=10) wins a/b=999989/11 duplicates_dropped=999979
+disorder  reordered=605713 lateness p50/p99/p99.9/max=2/9/10/41 gaps=267239 max_gap=9
 limits    key_window K=512 seek_cap=4096 replay_window=512
 outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
-          cache_hits=999725 installs=2105 catchup_steps=275 max_catchup=1
-paths     advance   (g above max, derives keys): n=261 mean=1235.5 ns p99=1750 ns max=2417 ns
-          current   (g equals max, key reused):  n=948146 mean=300.3 ns p99=375 ns max=16083 ns
-          straggler (g below max, old key):      n=1593 mean=491.5 ns p99=709 ns max=917 ns
-keys derived  1 key: n=261 mean=1235 ns
+          cache_hits=999725 installs=1117 catchup_steps=275 max_catchup=1
+paths     advance   (g above max, derives keys): n=261 mean=1322.0 ns p99=3667 ns max=6750 ns
+          current   (g equals max, key reused):  n=949069 mean=303.5 ns p99=375 ns max=44375 ns
+          straggler (g below max, old key):      n=670 mean=511.8 ns p99=750 ns max=1042 ns
+depths    d=1: n=261 mean=1322 ns
 keying    loss rate = 0/1000000 = 0.000e0
 timing    950000 measured calls (first 50000 of 1000000 arrivals skipped as warmup)
-          mean=300.9 ns p50=292 p99=375 p99.9=667 max=16083 ns -> 38.60 Gbps at 1452 B wire
-warmup    warmup-region mean=299.9 ns vs measured mean=300.9 ns
+          mean=303.9 ns p50=292 p99=375 p99.9=625 max=44375 ns -> 38.22 Gbps at 1452 B wire
+warmup    warmup-region mean=304.4 ns vs measured mean=303.9 ns

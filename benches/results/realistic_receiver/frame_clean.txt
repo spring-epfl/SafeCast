@@ -6,11 +6,11 @@ disorder  reordered=0 lateness p50/p99/p99.9/max=0/0/0/0 gaps=0 max_gap=0
 limits    key_window K=512 seek_cap=4096 replay_window=512
 outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
           cache_hits=999725 installs=275 catchup_steps=275 max_catchup=1
-paths     advance   (g above max, derives keys): n=261 mean=1281.8 ns p99=1833 ns max=9250 ns
-          current   (g equals max, key reused):  n=949739 mean=312.3 ns p99=416 ns max=65166 ns
+paths     advance   (g above max, derives keys): n=261 mean=1325.2 ns p99=2459 ns max=3500 ns
+          current   (g equals max, key reused):  n=949739 mean=315.4 ns p99=417 ns max=57166 ns
           straggler (g below max, old key):      n=0
-keys derived  1 key: n=261 mean=1282 ns
+depths    d=1: n=261 mean=1325 ns
 keying    loss rate = 0/1000000 = 0.000e0
 timing    950000 measured calls (first 50000 of 1000000 arrivals skipped as warmup)
-          mean=312.6 ns p50=292 p99=416 p99.9=459 max=65166 ns -> 37.16 Gbps at 1452 B wire
-warmup    warmup-region mean=312.1 ns vs measured mean=312.6 ns
+          mean=315.7 ns p50=333 p99=417 p99.9=500 max=57166 ns -> 36.79 Gbps at 1452 B wire
+warmup    warmup-region mean=317.5 ns vs measured mean=315.7 ns

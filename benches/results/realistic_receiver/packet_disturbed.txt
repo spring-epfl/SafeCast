@@ -1,16 +1,16 @@
 == Realistic Receiver Report ==
 config    granularity=packet payload=1424 B packets=1000000 seed=1
-network   dual-path (ST 2022-7): jitter=100000 ns/path loss=0.0001 /copy skew=2000000 ns
-delivery  delivered=1000000 lost_packets=0 (copies lost: a=100 b=104) wins a/b=999900/100 duplicates_dropped=999796
-disorder  reordered=724046 lateness p50/p99/p99.9/max=5/19/20/455 gaps=217572 max_gap=17
+network   dual-path (ST 2022-7): jitter=50000 ns/path loss=0.00001 /copy skew=150000 ns
+delivery  delivered=1000000 lost_packets=0 (copies lost: a=11 b=10) wins a/b=999989/11 duplicates_dropped=999979
+disorder  reordered=605713 lateness p50/p99/p99.9/max=2/9/10/41 gaps=267239 max_gap=9
 limits    key_window K=512 seek_cap=4096 replay_window=512
 outcome   decrypted=1000000 drops: behind=0 seek_cap=0 replay=0 auth=0
-          cache_hits=724046 installs=1000000 catchup_steps=1000000 max_catchup=18
-paths     advance   (g above max, derives keys): n=262233 mean=2194.8 ns p99=5167 ns max=107083 ns
+          cache_hits=605713 installs=1000000 catchup_steps=1000000 max_catchup=10
+paths     advance   (g above max, derives keys): n=374672 mean=1772.7 ns p99=3625 ns max=33791 ns
           current   (g equals max, key reused):  n=0
-          straggler (g below max, old key):      n=687767 mean=630.6 ns p99=792 ns max=59542 ns
-keys derived  1 key: n=55500 mean=1128 ns; 2 keys: n=49701 mean=1528 ns; 3 keys: n=42461 mean=1926 ns; 4 keys: n=34332 mean=2327 ns; 5 keys: n=27006 mean=2776 ns; 6 keys: n=19468 mean=3181 ns; 7 keys: n=13635 mean=3580 ns; 8 keys: n=8868 mean=3970 ns; 9 keys: n=5417 mean=4446 ns; 10 keys: n=2963 mean=4852 ns; 11 keys: n=1613 mean=5247 ns; 12 keys: n=742 mean=5646 ns; 13 keys: n=341 mean=6058 ns; 14 keys: n=136 mean=6428 ns; 15 keys: n=20 mean=7029 ns; 16 keys: n=24 mean=7203 ns; 17 keys: n=5 mean=9284 ns; 18 keys: n=1 mean=8583 ns
+          straggler (g below max, old key):      n=575328 mean=642.0 ns p99=833 ns max=27125 ns
+depths    d=1: n=120823 mean=1144 ns; d=2: n=95449 mean=1547 ns; d=3: n=68859 mean=1957 ns; d=4: n=44796 mean=2358 ns; d=5: n=25468 mean=2819 ns; d=6: n=12253 mean=3231 ns; d=7: n=5015 mean=3630 ns; d=8: n=1581 mean=4040 ns; d=9: n=377 mean=4669 ns; d=10: n=51 mean=5136 ns
 keying    loss rate = 0/1000000 = 0.000e0
 timing    950000 measured calls (first 50000 of 1000000 arrivals skipped as warmup)
-          mean=1062.4 ns p50=625 p99=4375 p99.9=5792 max=107083 ns -> 10.93 Gbps at 1452 B wire
-warmup    warmup-region mean=1048.7 ns vs measured mean=1062.4 ns
+          mean=1087.9 ns p50=667 p99=3250 p99.9=4083 max=33791 ns -> 10.68 Gbps at 1452 B wire
+warmup    warmup-region mean=1100.5 ns vs measured mean=1087.9 ns
