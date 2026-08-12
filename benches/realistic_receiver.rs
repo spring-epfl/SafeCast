@@ -46,7 +46,7 @@
 //!     frame-level K sweeps and the every-n sweep. It writes every run
 //!     as one CSV row.
 //!
-//! Run (defaults = dual path, 100 us jitter per path, 1e-5 loss per copy, 2 ms path skew):
+//! Run (defaults = dual path, 50 us jitter per path, 1e-5 loss per copy, 150 us path skew):
 //!   cargo bench --package safecast-core --bench realistic_receiver
 //! Zero-disturbance run for the ideal-benchmark comparison:
 //!   cargo bench --package safecast-core --bench realistic_receiver -- \
@@ -94,12 +94,6 @@ const LIBSRTP_REPLAY_MAX: u64 = 32_767;
 /// packet arriving further behind gets the wrong rollover counter,
 /// therefore the wrong AES-GCM nonce, and fails authentication. libsrtp 
 /// caps the replay window at 32767 for the same reason.
-///
-/// This limit only entered the picture when we considered different payload sizes.
-/// At 1424 B the worst lateness the network produces is about 455 positions,
-/// nowhere near it. But the lateness in positions grows as the payload
-/// shrinks, and at 16 B the 2 ms path skew spans about 40,800 positions,
-/// so there the rescued path-B copies cross this limit and fail authentication.
 const MAX_SEQ_LATENESS: u64 = 32_768;
 
 /// A fixed 32-byte ratchet seed, used by sender and receiver alike so both
@@ -125,8 +119,11 @@ struct Args {
     packets: u64,
 
     /// per-path jitter in ns: each copy's random extra delay is uniform in
-    /// 0..=this value
-    #[arg(long, default_value_t = 100_000)]
+    /// 0..=this value. The 50 us default is the upper bound on delay
+    /// variation for our setting.
+    /// Source: SMPTE ST 2110-21 (its bound is stated in packets of buffer
+    /// occupancy, and we converted to time via the stream's pacing)
+    #[arg(long, default_value_t = 50_000)]
     jitter_ns: u64,
 
     /// per-path loss probability on each path (0 = lossless). The 1e-5
@@ -941,8 +938,11 @@ const SWEEP_PAYLOADS: &[usize] = &[
     16, 32, 40, 64, 128, 160, 256, 512, 800, 1024, 1200, 1424, 2048, 4096, 8924,
 ];
 
-/// The packet-level K values of the K sweep.
-const PACKET_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 16, 24, 32, 64, 128, 256, 400, 448, 456, 512];
+/// The packet-level K values of the K sweep, dense around the two
+/// landmarks of the default network at 1424 B: jitter alone spans up to
+/// 11 positions (covered from K = 12 on), and a path-B rescue can arrive
+/// up to skew + jitter = 44 positions late (covered from K = 45 on).
+const PACKET_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 12, 16, 24, 32, 40, 44, 45, 48, 64, 128, 512];
 
 /// The frame-level K values of the K sweep. Frame-level lateness is 0 or
 /// 1 generations, so the interesting step is K=1 to K=2.
@@ -952,7 +952,7 @@ const FRAME_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 16, 32, 64, 128, 256, 512];
 /// the disturbed network. Packet-level (N=1) and frame-level (N=3,640)
 /// already exist as their own granularities, so we cover here the
 /// space between them.
-const N_SWEEP: &[u32] = &[2, 4, 8, 16, 32, 64, 128, 256, 455, 512, 1024, 1820];
+const N_SWEEP: &[u32] = &[2, 4, 8, 16, 32, 45, 64, 128, 256, 512, 1024, 1820];
 
 /// How many times the sweep measures each configuration. Only the
 /// attempt with the smallest p99.9 (ties broken by the smaller mean)
