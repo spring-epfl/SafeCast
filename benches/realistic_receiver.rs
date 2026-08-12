@@ -938,10 +938,17 @@ const SWEEP_PAYLOADS: &[usize] = &[
     16, 32, 40, 64, 128, 160, 256, 512, 800, 1024, 1200, 1424, 2048, 4096, 8924,
 ];
 
-/// The packet-level K values of the K sweep, dense around the two
-/// landmarks of the default network at 1424 B: jitter alone spans up to
-/// 11 positions (covered from K = 12 on), and a path-B rescue can arrive
-/// up to skew + jitter = 44 positions late (covered from K = 45 on).
+/// The packet-level K values of the K sweep. K is how many generation
+/// keys the receiver keeps, so a packet arriving more than K positions
+/// behind the newest one finds its key already deleted and is dropped.
+/// The default network at 1424 B makes a packet late in two ways:
+/// jitter reorders nearby packets by at most 11 positions. And when
+/// path A loses a packet, its path-B copy arrives at most 
+/// skew + jitter = 44 positions behind. That gives two K
+/// values where the drops change: K = 12 is the first K that keeps all
+/// jitter-late packets (only the rare path-B rescues are still lost),
+/// and K = 45 the first that keeps the rescues too. The sweep values
+/// surround those two points.
 const PACKET_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 12, 16, 24, 32, 40, 44, 45, 48, 64, 128, 512];
 
 /// The frame-level K values of the K sweep. Frame-level lateness is 0 or
