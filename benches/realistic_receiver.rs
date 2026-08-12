@@ -939,17 +939,17 @@ const SWEEP_PAYLOADS: &[usize] = &[
 ];
 
 /// The packet-level K values of the K sweep. K is how many generation
-/// keys the receiver keeps, so a packet arriving more than K positions
+/// keys the receiver keeps, so a packet arriving K or more positions
 /// behind the newest one finds its key already deleted and is dropped.
 /// The default network at 1424 B makes a packet late in two ways:
 /// jitter reorders nearby packets by at most 11 positions. And when
-/// path A loses a packet, its path-B copy arrives at most 
-/// skew + jitter = 44 positions behind. That gives two K
+/// path A loses a packet, its path-B copy arrives at most
+/// skew + jitter = 44 positions behind. That gives two K 
 /// values where the drops change: K = 12 is the first K that keeps all
 /// jitter-late packets (only the rare path-B rescues are still lost),
-/// and K = 45 the first that keeps the rescues too. The sweep values
-/// surround those two points.
-const PACKET_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 12, 16, 24, 32, 40, 44, 45, 48, 64, 128, 512];
+/// and K = 42 (worst lateness + 1) the first that keeps the rescues too. 
+/// The sweep values surround those two points.
+const PACKET_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 12, 16, 24, 32, 40, 41, 42, 48, 64, 128, 512];
 
 /// The frame-level K values of the K sweep. Frame-level lateness is 0 or
 /// 1 generations, so the interesting step is K=1 to K=2.
@@ -959,7 +959,7 @@ const FRAME_K_SWEEP: &[usize] = &[1, 2, 3, 4, 8, 16, 32, 64, 128, 256, 512];
 /// the disturbed network. Packet-level (N=1) and frame-level (N=3,640)
 /// already exist as their own granularities, so we cover here the
 /// space between them.
-const N_SWEEP: &[u32] = &[2, 4, 8, 16, 32, 45, 64, 128, 256, 512, 1024, 1820];
+const N_SWEEP: &[u32] = &[2, 4, 8, 16, 32, 41, 64, 128, 256, 512, 1024, 1820];
 
 /// How many times the sweep measures each configuration. Only the
 /// attempt with the smallest p99.9 (ties broken by the smaller mean)
