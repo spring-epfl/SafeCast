@@ -46,7 +46,7 @@
 //!     frame-level K sweeps and the every-n sweep. It writes every run
 //!     as one CSV row.
 //!
-//! Run (defaults = dual path, 100 us jitter per path, 1e-4 loss per copy, 2 ms path skew):
+//! Run (defaults = dual path, 100 us jitter per path, 1e-5 loss per copy, 2 ms path skew):
 //!   cargo bench --package safecast-core --bench realistic_receiver
 //! Zero-disturbance run for the ideal-benchmark comparison:
 //!   cargo bench --package safecast-core --bench realistic_receiver -- \
@@ -129,8 +129,10 @@ struct Args {
     #[arg(long, default_value_t = 100_000)]
     jitter_ns: u64,
 
-    /// per-copy loss probability on each path (0 = lossless)
-    #[arg(long, default_value_t = 1e-4)]
+    /// per-path loss probability on each path (0 = lossless). The 1e-5
+    /// default is the upper bound on loss for our setting.
+    /// Source: https://www.itu.int/rec/T-REC-Y.1541 (Table 3)
+    #[arg(long, default_value_t = 1e-5)]
     loss: f64,
 
     /// path B's extra base delay over path A in ns (the ST 2022-7 skew)
@@ -246,7 +248,7 @@ struct RunConfig {
     payload: usize,           // media payload bytes per packet
     packets: u64,             // number of packets to send
     jitter_ns: u64,           // per-path jitter: each copy's random extra delay is uniform in 0..=this
-    loss: f64,                // per-copy loss probability on each path
+    loss: f64,                // per-path loss probability on each path
     skew_ns: u64,             // path B's extra base delay over path A (ST 2022-7)
     single_path: bool,        // path A only: no dual-path redundancy and no merge
     key_window: usize,        // K: how many generation keys the receiver keeps (its ring size)

@@ -28,11 +28,14 @@ At the end, we point to the raw output files and the commands that reproduce eve
 "Disturbed" runs use our assumed facility network:
 * two paths (ST 2022-7) whose transit times differ by 2 ms
 * per path, uniform 0-100 µs jitter
-* per path, 1e-4 loss: each packet travels as one copy per path, and
-  each copy is lost independently with probability 1 in 10,000. A packet
-  is gone only if both its copies are lost.
+* per path, 1e-5 loss: each packet travels as one copy per path, and
+  each copy is lost independently with probability 1 in 100,000. A packet
+  is gone only if both its copies are lost. The 1e-5 is the upper bound
+  on loss for our setting.
+  Source: https://www.itu.int/rec/T-REC-Y.1541 (Table 3)
 
-These numbers are our assumptions, and each is a CLI flag, hence open for configuration.
+These numbers are chosen for our specific setting. However, each is a CLI flag, 
+and hence open for configuration.
 
 All runs use the same receiver limits: key window K = 512 (the receiver
 keeps the last 512 generation keys), seek cap 4,096 (the most keys one
