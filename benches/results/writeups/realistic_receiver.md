@@ -28,6 +28,9 @@ At the end, we point to the raw output files and the commands that reproduce eve
 "Disturbed" runs use our assumed facility network:
 * two paths (ST 2022-7) whose transit times differ by 2 ms
 * per path, uniform 0-100 µs jitter
+* two paths (ST 2022-7) whose transit times differ by 150 µs. The 150 µs
+  is the upper bound on path skew for our setting (by design).
+  Source: https://pub.smpte.org/doc/st2022-7/20181226-pub/
 * per path, 1e-5 loss: each packet travels as one copy per path, and
   each copy is lost independently with probability 1 in 100,000. A packet
   is gone only if both its copies are lost. The 1e-5 is the upper bound

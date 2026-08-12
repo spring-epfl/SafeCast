@@ -135,8 +135,11 @@ struct Args {
     #[arg(long, default_value_t = 1e-5)]
     loss: f64,
 
-    /// path B's extra base delay over path A in ns (the ST 2022-7 skew)
-    #[arg(long, default_value_t = 2_000_000)]
+    /// path B's extra base delay over path A in ns (the ST 2022-7 skew).
+    /// The 150 us default is the upper bound on path skew for our
+    /// setting (by design).
+    /// Source: https://pub.smpte.org/doc/st2022-7/20181226-pub/
+    #[arg(long, default_value_t = 150_000)]
     skew_ns: u64,
 
     /// send over path A only: no ST 2022-7 dual-path redundancy and no merge
