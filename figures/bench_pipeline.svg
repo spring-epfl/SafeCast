@@ -111,7 +111,7 @@
   <g font-size="11.5" fill="#333">
     <text x="1018" y="159">latency percentiles</text>
     <text x="1018" y="229">throughput</text>
-    <text x="1018" y="252">keying loss</text>
+    <text x="1018" y="252">key misses</text>
   </g>
   <!-- stats -->
   <line x1="885" y1="230" x2="885" y2="236" stroke="#e67e22" stroke-width="1.4"/>
