@@ -4,11 +4,11 @@ SafeCast is a research prototype and evaluation of a system for
 end-to-end encrypted real-time media transported over IP multicast. The design combines two
 building blocks:
 
-- **Group key management**, provided by **MLS** (Messaging Layer Security): MLS
+- **Group key management**, provided by **MLS** (Messaging Layer Security, [RFC 9420](https://datatracker.ietf.org/doc/html/rfc9420)): MLS
   maintains a shared group secret, and rekeys efficiently whenever a
   participant joins, leaves, or is removed, even at large scale. Each such change
   advances the group to a new epoch (the span during which the group's secret stays fixed).
-- **Transport protection**, provided by **SRTP** (Secure RTP): SRTP encrypts and
+- **Transport protection**, provided by **SRTP** (Secure RTP, [RFC 3711](https://datatracker.ietf.org/doc/html/rfc3711)): SRTP encrypts and
   authenticates the media, using the key provided by MLS.
 
 On top of the bridge between the two components, this repository adds and
@@ -20,7 +20,8 @@ It also adds and evaluates optional **per-sender source authentication**:
 the shared group key only proves that *some* member sent a packet, so any
 member could forge traffic as any other. The classic fix, signing every
 packet, is too slow at media packet rates. This gap is instead closed 
-by adapting the **TESLA** protocol to our setting. In TESLA, the sender tags every packet 
+by adapting the **TESLA** protocol (Timed Efficient Stream Loss-tolerant
+Authentication, [RFC 4082](https://datatracker.ietf.org/doc/html/rfc4082)) to our setting. In TESLA, the sender tags every packet 
 with a fast MAC under a key that only the sender knows, and reveals 
 that key a few milliseconds later. Receivers hold each packet
 briefly and check its tag once the key is out. A valid tag then proves
