@@ -233,18 +233,22 @@ numbers, 11 and 33, produce the three regions of the table.
   arrive 24 to 41 positions late, beyond anything jitter produces. Their
   loss fades in steps as K grows past each rescue's lateness: 11 lost
   up to K = 24, 9 at K = 32, one from K = 40.
-- **The loss reaches zero at K = 42, the measured worst lateness (41)
-  plus one.** This is the general sizing rule: K must cover the worst
-  lateness.
+- **In this run the loss reaches zero at K = 42, one past the measured
+  worst lateness of 41.** That measured maximum is seed-dependent,
+  though. The largest lateness the network can ever produce is one skew
+  plus one jitter span, which is 44 positions (the top of the 22-to-44
+  range above), so a seed-independent key window must cover 44 (i.e.,
+  hold 45 keys). This is the general sizing rule: K must cover the worst
+  lateness the network can produce.
 
 The same experiment at frame level shows what coarser generations buy. At
 K = 1 the receiver keeps only the current frame's key, and we
 measure 698 lost packets. Those are exactly the late packets that
 arrive after the receiver already moved to the next frame, so their own
 frame's key was already deleted. At K = 2 the loss is zero, because the
-worst lateness of 41 packets is shorter than one 3,640-packet frame,
+worst lateness of 44 packets is shorter than one 3,640-packet frame,
 so a late packet can be at most one frame behind. The same network
-disorder therefore needs 42 kept keys at packet level and 2 at frame
+disorder therefore needs 45 kept keys at packet level and 2 at frame
 level.
 
 ### 5. The forward-secrecy tradeoff
@@ -255,18 +259,18 @@ one generation of recorded traffic. How much traffic that is depends exactly on 
 A packet-level key unlocks one packet. A frame-level key unlocks a whole 3,640-packet
 frame. The epoch key unlocks the entire epoch. The exposure of a
 configuration is therefore K multiplied by the traffic behind one key.
-Using the values measured in section 4:
+Using the worst-case sizing from section 4:
 
 | granularity | K for zero loss | exposure if compromised             |
 |-------------|-----------------|-------------------------------------|
 | epoch       | 1               | the whole epoch                     |
 | frame       | 2 (frames)      | 7,280 packets ≈ 33 ms of video      |
-| packet      | 42 (packets)    | 42 packets ≈ 0.19 ms of video       |
+| packet      | 45 (packets)    | 45 packets ≈ 0.21 ms of video       |
 
-Packet-level keying keeps 42 keys and frame-level keeps only 2, yet
-packet-level exposes about 170 times less traffic (42 packets against
+Packet-level keying keeps 45 keys and frame-level keeps only 2, yet
+packet-level exposes about 160 times less traffic (45 packets against
 7,280), because each of its keys unlocks so little. This is the central
-tradeoff of the whole evaluation: packet-level keying buys about 170
+tradeoff of the whole evaluation: packet-level keying buys about 160
 times finer forward secrecy at about 3.6 times the per-packet cost of
 section 1.
 
