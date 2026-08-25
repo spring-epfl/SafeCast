@@ -16,7 +16,7 @@ evaluates fine-grained **within-epoch keying**. Finer keying shrinks how much me
 a single compromised key exposes, at the cost of extra key-derivation work 
 (and hence lower achievable throughput).
 
-It also adds and evaluates optional per-sender **source authentication**:
+It also adds and evaluates optional **per-sender source authentication**:
 the shared group key only proves that *some* member sent a packet, so any
 member could forge traffic as any other. The classic fix, signing every
 packet, is too slow at media packet rates. This gap is instead closed 
