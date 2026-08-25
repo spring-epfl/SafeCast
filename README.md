@@ -12,15 +12,15 @@ building blocks:
   authenticates the media, using the key provided by MLS.
 
 On top of the bridge between the two components, this repository adds and
-evaluates fine-grained, within-epoch keying. Finer keying shrinks how much media 
+evaluates fine-grained **within-epoch keying**. Finer keying shrinks how much media 
 a single compromised key exposes, at the cost of extra key-derivation work 
 (and hence lower achievable throughput).
 
-It also adds and evaluates per-sender source authentication:
+It also adds and evaluates optional per-sender **source authentication**:
 the shared group key only proves that *some* member sent a packet, so any
 member could forge traffic as any other. The classic fix, signing every
 packet, is too slow at media packet rates. This gap is instead closed 
-with an implementation of TESLA. In TESLA, the sender tags every packet 
+by adapting the **TESLA** protocol to our setting. In TESLA, the sender tags every packet 
 with a fast MAC under a key that only the sender knows, and reveals 
 that key a few milliseconds later. Receivers hold each packet
 briefly and check its tag once the key is out. A valid tag then proves
