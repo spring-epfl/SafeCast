@@ -18,7 +18,7 @@
 
   <!-- exporter arrow -->
   <line x1="740" y1="118" x2="740" y2="166" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="752" y="147" font-size="15" xml:space="preserve">MLS-Exporter(SSRC)</text>
+  <text x="752" y="147" font-size="15" xml:space="preserve"><tspan font-style="italic">S</tspan><tspan dy="3.5" font-size="12" font-style="italic">0</tspan><tspan dy="-3.5"> = MLS-Exporter(SSRC)</tspan></text>
 
   <!-- shared ratchet -->
   <rect x="550" y="168" width="380" height="152" fill="none" stroke="#000" stroke-width="1.5"/>
@@ -44,10 +44,10 @@
 
   <!-- keys to both endpoints -->
   <line x1="552" y1="320" x2="552" y2="395" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="540" y="364" text-anchor="end" font-size="15.5" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan></text>
+  <text x="540" y="364" text-anchor="end" font-size="15.5" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan><tspan dy="-3.5">, </tspan><tspan font-style="italic">salt</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan></text>
 
   <line x1="920" y1="320" x2="920" y2="395" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="932" y="364" font-size="15.5" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan></text>
+  <text x="932" y="364" font-size="15.5" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan><tspan dy="-3.5">, </tspan><tspan font-style="italic">salt</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan></text>
 
   <!-- receiver: g from header, back up into the ratchet -->
   <line x1="880" y1="396" x2="880" y2="322" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
@@ -62,8 +62,8 @@
   <rect x="310" y="396" width="350" height="116" fill="none" stroke="#000" stroke-width="1.5"/>
   <text x="485" y="422" text-anchor="middle" font-size="17" font-weight="bold">SRTP encrypt</text>
   <g font-size="15.5">
-    <text x="485" y="456" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">c</tspan><tspan> = AES-GCM(</tspan><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan><tspan dy="-3.5">, IV, payload, header)</tspan></text>
-    <text x="485" y="488" text-anchor="middle" xml:space="preserve">IV derived from header</text>
+    <text x="485" y="456" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">c</tspan><tspan> = AES-GCM(</tspan><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan><tspan dy="-3.5">, IV, payload, hdr)</tspan></text>
+    <text x="485" y="488" text-anchor="middle" xml:space="preserve">IV derived from hdr and <tspan font-style="italic">salt</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan></text>
   </g>
 
 
@@ -71,8 +71,8 @@
   <rect x="820" y="396" width="350" height="150" fill="none" stroke="#000" stroke-width="1.5"/>
   <text x="995" y="422" text-anchor="middle" font-size="17" font-weight="bold">SRTP decrypt</text>
   <g font-size="15.5">
-    <text x="995" y="456" text-anchor="middle" xml:space="preserve">payload = AES-GCM<tspan dy="-6" font-size="11">&#8722;1</tspan><tspan dy="6">(</tspan><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan><tspan dy="-3.5">, IV, </tspan><tspan font-style="italic">c</tspan><tspan>, header)</tspan></text>
-    <text x="995" y="484" text-anchor="middle" xml:space="preserve">IV recomputed from header</text>
+    <text x="995" y="456" text-anchor="middle" xml:space="preserve">payload = AES-GCM<tspan dy="-6" font-size="11">&#8722;1</tspan><tspan dy="6">(</tspan><tspan font-style="italic">key</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan><tspan dy="-3.5">, IV, </tspan><tspan font-style="italic">c</tspan><tspan>, hdr)</tspan></text>
+    <text x="995" y="484" text-anchor="middle" xml:space="preserve">IV recomputed from hdr and <tspan font-style="italic">salt</tspan><tspan dy="3.5" font-size="12" font-style="italic">g</tspan></text>
   </g>
 
   <!-- key window -->
@@ -96,7 +96,7 @@
     <text x="1087" y="521" text-anchor="middle" xml:space="preserve"><tspan font-style="italic">key</tspan><tspan dy="3" font-size="10" font-style="italic">g</tspan></text>
   </g>
   <path d="M 805 76 C 874 56, 874 126, 805 106" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="884" y="96" font-size="15" xml:space="preserve">per-epoch rekey</text>
+  <text x="866" y="96" font-size="15" xml:space="preserve">per-epoch rekey</text>
 
   <!-- TESLA extension -->
 
@@ -104,7 +104,7 @@
   <text x="497" y="550" font-size="13.5" xml:space="preserve">hdr || <tspan font-style="italic">c</tspan></text>
 
   <rect x="310" y="580" width="350" height="116" fill="none" stroke="#000" stroke-width="1.5"/>
-  <text x="485" y="606" text-anchor="middle" font-size="17" font-weight="bold">TESLA authenticate</text>
+  <text x="485" y="606" text-anchor="middle" font-size="17" font-weight="bold">Source authentication</text>
   <g font-size="15.5">
     <text x="485" y="640" text-anchor="middle" xml:space="preserve">hash chain: <tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">0</tspan><tspan dy="-3.5"> &#8592; </tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">1</tspan><tspan dy="-3.5"> &#8592; &#8943; &#8592; </tspan><tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">N</tspan></text>
     <text x="485" y="672" text-anchor="middle" xml:space="preserve">tag = MAC(<tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5">, hdr || </tspan><tspan font-style="italic">c</tspan><tspan>),  </tspan><tspan font-style="italic">i</tspan><tspan> = current interval</tspan></text>
@@ -114,7 +114,7 @@
   <text x="738" y="620" text-anchor="middle" font-size="13.5" xml:space="preserve">hdr || <tspan font-style="italic">c</tspan> || <tspan font-style="italic">i</tspan> || <tspan font-style="italic">K</tspan><tspan dy="3" font-size="10.5" font-style="italic">i&#8722;d</tspan><tspan dy="-3"> || tag</tspan></text>
 
   <rect x="820" y="580" width="350" height="116" fill="none" stroke="#000" stroke-width="1.5"/>
-  <text x="995" y="606" text-anchor="middle" font-size="17" font-weight="bold">TESLA verify</text>
+  <text x="995" y="606" text-anchor="middle" font-size="17" font-weight="bold">Source verification</text>
   <g font-size="15">
     <text x="995" y="634" text-anchor="middle" xml:space="preserve">accept iff <tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5"> still secret</tspan></text>
     <text x="995" y="664" text-anchor="middle" xml:space="preserve">when <tspan font-style="italic">K</tspan><tspan dy="3.5" font-size="12" font-style="italic">i</tspan><tspan dy="-3.5"> is disclosed, </tspan><tspan font-style="italic">d</tspan><tspan> intervals later:</tspan></text>
