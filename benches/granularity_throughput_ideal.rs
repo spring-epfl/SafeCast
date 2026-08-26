@@ -153,9 +153,9 @@ fn bench_protect(c: &mut Criterion) {
             // how many packets share one timestamp (= one frame)
             let ppf = packets_per_frame(payload_size);
 
-            // telling Criterion how many bytes one iteration processes, so it
-            // reports bytes/s (the Gbps of the figures) instead of just time
-            group.throughput(Throughput::Bytes(srtp_len as u64));
+            // telling Criterion how many wire bits one iteration processes, so
+            // it reports Gb/s (the Gbps of the figures) instead of just time
+            group.throughput(Throughput::Bits(8 * srtp_len as u64));
             group.bench_with_input(
                 BenchmarkId::new(gran_label, size_label),
                 &payload_size,
@@ -223,9 +223,9 @@ fn bench_unprotect(c: &mut Criterion) {
             // how many packets share one timestamp (= one frame)
             let ppf = packets_per_frame(payload_size);
 
-            // telling Criterion how many bytes one iteration processes, so it
-            // reports bytes/s (the Gbps of the figures) instead of just time
-            group.throughput(Throughput::Bytes(srtp_len as u64));
+            // telling Criterion how many wire bits one iteration processes, so
+            // it reports Gb/s (the Gbps of the figures) instead of just time
+            group.throughput(Throughput::Bits(8 * srtp_len as u64));
             group.bench_with_input(
                 BenchmarkId::new(gran_label, size_label),
                 &payload_size,

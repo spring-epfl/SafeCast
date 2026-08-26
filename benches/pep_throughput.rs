@@ -107,7 +107,7 @@ fn bench_pep_ctr_encrypt(c: &mut Criterion) {
 
         // output packet on the wire: RTP header (clear) + encrypted payload
         let pep_len = RTP_HEADER_LEN + payload_size;
-        group.throughput(Throughput::Bytes(pep_len as u64));
+        group.throughput(Throughput::Bits(8 * pep_len as u64));
 
         group.bench_with_input(
             BenchmarkId::new("ctr_encrypt", label),
@@ -166,7 +166,7 @@ fn bench_pep_ctr_decrypt(c: &mut Criterion) {
     for &(payload_size, label) in PAYLOAD_SIZES {
 
         let pep_len = RTP_HEADER_LEN + payload_size;
-        group.throughput(Throughput::Bytes(pep_len as u64));
+        group.throughput(Throughput::Bits(8 * pep_len as u64));
 
         group.bench_with_input(
             BenchmarkId::new("ctr_decrypt", label),
@@ -233,7 +233,7 @@ fn bench_pep_ctr_cmac_encrypt(c: &mut Criterion) {
 
         // output packet: header (clear) + encrypted(payload + 8-byte MAC)
         let pep_len = RTP_HEADER_LEN + payload_size + CMAC_TAG_LEN;
-        group.throughput(Throughput::Bytes(pep_len as u64));
+        group.throughput(Throughput::Bits(8 * pep_len as u64));
 
         group.bench_with_input(
             BenchmarkId::new("ctr_cmac64_encrypt", label),
@@ -299,7 +299,7 @@ fn bench_pep_ctr_cmac_decrypt(c: &mut Criterion) {
     for &(payload_size, label) in PAYLOAD_SIZES {
 
         let pep_len = RTP_HEADER_LEN + payload_size + CMAC_TAG_LEN;
-        group.throughput(Throughput::Bytes(pep_len as u64));
+        group.throughput(Throughput::Bits(8 * pep_len as u64));
 
         group.bench_with_input(
             BenchmarkId::new("ctr_cmac64_decrypt", label),

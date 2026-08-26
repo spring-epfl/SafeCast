@@ -48,9 +48,9 @@ fn bench_raw_aes_gcm(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
 
     for &payload_size in PAYLOAD_SIZES {
-        // telling Criterion the bytes processed per iteration (payload + tag)
+        // telling Criterion the bits processed per iteration (payload + tag)
         let total_size = payload_size + TAG_LEN;
-        group.throughput(Throughput::Bytes(total_size as u64));
+        group.throughput(Throughput::Bits(8 * total_size as u64));
 
         group.bench_with_input(
             BenchmarkId::new("encrypt", payload_size),

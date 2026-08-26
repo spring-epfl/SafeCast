@@ -168,9 +168,9 @@ fn bench_srtp_throughput(c: &mut Criterion) {
         let rtp_len = RTP_HEADER_LEN + payload_size;
         let srtp_len = rtp_len + GCM_TAG_LEN;
 
-        // telling Criterion how many bytes each iteration processes,
-        // so it can report throughput (bytes/sec) alongside raw latency
-        group.throughput(Throughput::Bytes(srtp_len as u64));
+        // telling Criterion how many wire bits each iteration processes,
+        // so it can report throughput (Gb/s) alongside raw latency
+        group.throughput(Throughput::Bits(8 * srtp_len as u64));
 
         // registering a benchmark named "protect/<label>" that receives
         // the payload size as input and runs the closure for measurement
@@ -266,8 +266,8 @@ fn bench_srtp_unprotect_throughput(c: &mut Criterion) {
         let rtp_len = RTP_HEADER_LEN + payload_size;
         let srtp_len = rtp_len + GCM_TAG_LEN;
 
-        // telling Criterion how many bytes each iteration processes
-        group.throughput(Throughput::Bytes(srtp_len as u64));
+        // telling Criterion how many wire bits each iteration processes
+        group.throughput(Throughput::Bits(8 * srtp_len as u64));
 
         group.bench_with_input(
             BenchmarkId::new("unprotect", label),

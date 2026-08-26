@@ -85,8 +85,8 @@ fn bench_srtp_scaling(c: &mut Criterion) {
         let rtp_len = RTP_HEADER_LEN + payload_size;
         let srtp_len = rtp_len + GCM_TAG_LEN;
 
-        // telling Criterion the bytes processed per iteration (header + payload + tag)
-        group.throughput(Throughput::Bytes(srtp_len as u64));
+        // telling Criterion the wire bits per iteration (header + payload + tag)
+        group.throughput(Throughput::Bits(8 * srtp_len as u64));
 
         group.bench_with_input(
             BenchmarkId::new("protect", payload_size),

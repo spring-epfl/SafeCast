@@ -120,7 +120,9 @@ Once Rust and OpenSSL are in place, `cargo build` compiles everything.
 
 ### Docker (alternative)
 
-Instead of installing the toolchain, you can build a Rust container.
+Instead of installing the toolchain, you can build a Rust container. This
+requires a running [Docker](https://docs.docker.com/get-started/get-docker/)
+daemon (on macOS and Windows: start Docker Desktop first).
 
 Everything a container writes is discarded when it exits, so each `-v` flag
 below maps a directory of this repo into the container to make sure that what the run writes lands on your machine.
@@ -161,6 +163,11 @@ Or run a single benchmark:
 ```bash
 cargo bench --package safecast-core --bench <name>
 ```
+
+Criterion normally reports throughput in binary bytes (GiB/s). To spare the reader
+the mental unit conversion, we switched all throughput benchmarks to report
+in decimal gigabits per second (`Gb/s`). The numbers Criterion prints in the
+terminal are then directly comparable to the Gbps numbers in the paper.
 
 | Benchmark | What it measures | Output |
 | --- | --- | --- |

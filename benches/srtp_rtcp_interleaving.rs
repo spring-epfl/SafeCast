@@ -155,10 +155,10 @@ fn bench_baseline(c: &mut Criterion) {
         let rtp_len = RTP_HEADER_LEN + payload_size;
         let srtp_len = rtp_len + GCM_TAG_LEN;
 
-        // Criterion uses this to compute throughput in bytes/sec.
-        // We report SRTP packet bytes (header + payload + tag), same as
+        // Criterion uses this to compute throughput in bits/sec.
+        // We report SRTP packet bits (header + payload + tag), same as
         // the interleaved benchmark, so the two are directly comparable.
-        group.throughput(Throughput::Bytes(srtp_len as u64));
+        group.throughput(Throughput::Bits(8 * srtp_len as u64));
 
         group.bench_with_input(
             BenchmarkId::new("baseline", label),
@@ -221,9 +221,9 @@ fn bench_interleaved(c: &mut Criterion) {
         let rtp_len = RTP_HEADER_LEN + payload_size;
         let srtp_len = rtp_len + GCM_TAG_LEN;
 
-        // throughput reported in SRTP bytes only (not including the
-        // occasional RTCP bytes) so it stays comparable to baseline
-        group.throughput(Throughput::Bytes(srtp_len as u64));
+        // throughput reported in SRTP bits only (not including the
+        // occasional RTCP bits) so it stays comparable to baseline
+        group.throughput(Throughput::Bits(8 * srtp_len as u64));
 
         group.bench_with_input(
             BenchmarkId::new("interleaved", label),
