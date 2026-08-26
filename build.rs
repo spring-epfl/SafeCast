@@ -11,8 +11,9 @@ fn main() {
     let srtp2_include = std::env::var("DEP_SRTP2_INCLUDE")
         .expect("DEP_SRTP2_INCLUDE not set; srtp2-sys build script should export it");
 
-    let openssl = pkg_config::probe_library("openssl")
-        .expect("failed to find OpenSSL via pkg-config");
+    // OpenSSL include dir
+    let openssl_include = std::env::var("DEP_OPENSSL_INCLUDE")
+        .expect("DEP_OPENSSL_INCLUDE not set; openssl-sys build script should export it");
 
     let mut build = cc::Build::new();
     build.file("benches/c/srtp_kdf.c");
@@ -25,9 +26,7 @@ fn main() {
     build.include(&srtp2_include);
 
     // OpenSSL headers (needed by libsrtp2's cipher backends)
-    for path in &openssl.include_paths {
-        build.include(path);
-    }
+    build.include(&openssl_include);
 
     // OPENSSL is defined when libsrtp2 is built with --enable-openssl
     build.define("HAVE_CONFIG_H", None);

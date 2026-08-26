@@ -3219,7 +3219,7 @@ dependencies = [
  "openmls_rust_crypto",
  "openmls_traits",
  "openssl",
- "pkg-config",
+ "openssl-sys",
  "rand 0.9.2",
  "rand_chacha 0.9.0",
  "serde_json",

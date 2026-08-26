@@ -69,6 +69,7 @@ rand_chacha = "0.9"
 hmac = "0.12"
 sha2 = { version = "0.10", features = ["asm"] }
 openssl = "0.10"
+openssl-sys = "0.9"
 
 openmls = { workspace = true }
 openmls_rust_crypto = { workspace = true }
@@ -81,7 +82,6 @@ serde_json = { workspace = true }
 
 [build-dependencies]
 cc = "1"
-pkg-config = "0.3"
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }
