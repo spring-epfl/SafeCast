@@ -95,7 +95,8 @@ SafeCast/
 
 ## Setup
 
-You need a Rust toolchain and OpenSSL.
+You need a Rust toolchain and OpenSSL (or see the
+[Docker alternative](#docker-alternative) below).
 
 1. Rust: Install via [rustup](https://rustup.rs):
    ```bash
@@ -116,6 +117,37 @@ You need a Rust toolchain and OpenSSL.
    ```
 
 Once Rust and OpenSSL are in place, `cargo build` compiles everything.
+
+### Docker (alternative)
+
+Instead of installing the toolchain, you can build a Rust container.
+
+Everything a container writes is discarded when it exits, so each `-v` flag
+below maps a directory of this repo into the container to make sure that what the run writes lands on your machine.
+
+```bash
+docker build -t safecast .
+
+# To regenerate all figures from the checked-in benchmark results
+# (they appear in figures/):
+docker run --rm -v "$PWD/figures:/safecast/figures" safecast --skip-bench
+
+# Or re-run every benchmark first (about 2.5 hours), then regenerate the
+# figures. The second -v also keeps the raw benchmark data (benches/results/):
+docker run --rm \
+    -v "$PWD/figures:/safecast/figures" \
+    -v "$PWD/benches/results:/safecast/benches/results" \
+    safecast
+```
+
+Two caveats:
+
+- Docker (in particular Docker Desktop's virtual machine) adds unmeasured
+  overhead, so benchmark results may differ from the native ones available
+  in `benches/results/`.
+- The Docker image covers the benchmarks and figures only. If you want to try
+  the live multicast demo (`demo/`), run it natively (without extra network
+  configuration, the container cannot exchange multicast with the host).
 
 ## Benchmarks
 

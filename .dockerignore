@@ -1,0 +1,5 @@
+target
+third_party/openmls/target
+.git
+Dockerfile
+.dockerignore
